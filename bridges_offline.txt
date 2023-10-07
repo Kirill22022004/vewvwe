@@ -1,0 +1,254 @@
+struct Bicomp {
+    int n, t, sz;
+    vector<vector<pair<int, int>>> g;
+    vector<int> used, used2, tin, up, comp, ts, was, main_comp;
+    vector<array<int, 3>> bridges, main_bridges;
+    set<pair<int, int>> ban;
+
+    void build(int n_) {
+        n = n_;
+        g.resize(n);
+        used.resize(n);
+        tin.resize(n);
+        up.resize(n);
+        comp.resize(n);
+        was.resize(n);
+        used2.resize(n);
+        main_comp.resize(n);
+    }
+
+    Bicomp(int n = 0) {
+        build(n);
+    }
+
+    void reset(int cnt) {
+        n = cnt;
+        bridges.clear();
+        main_bridges.clear();
+        ban.clear();
+        sz = 0, t = 1;
+        for (int i = 0; i < cnt; i++) {
+            g[i].clear();
+            used[i] = tin[i] = was[i] = used2[i] = 0;
+            comp[i] = main_comp[i] = -1;
+        }
+    }
+
+    void add_edge(int v, int u) {
+        g[v].push_back({u, 1});
+        g[u].push_back({v, 1});
+    }
+
+    void add_bridge(int v, int u, int w) {
+        g[v].push_back({u, w});
+        g[u].push_back({v, w});
+    }
+
+    void dfs(int v, int pr) {
+        tin[v] = up[v] = t++;
+        bool flag = true;
+        for (auto [u, w] : g[v]) {
+            if (u == pr && flag) {
+                flag = false;
+                continue;
+            }
+            if (!tin[u]) {
+                dfs(u, v);
+                if (up[u] > tin[v]) {
+                    ban.insert({v, u});
+                    ban.insert({u, v});
+                    bridges.push_back({v, u, w});
+                }
+                up[v] = min(up[v], up[u]);
+            } else {
+                up[v] = min(up[v], tin[u]);
+            }
+        }
+    }
+
+    void color(int v) {
+        comp[v] = sz;
+        for (auto [u, w] : g[v]) {
+            if (comp[u] != -1) {
+                continue;
+            }
+            if (ban.find({v, u}) != ban.end()) {
+                continue;
+            }
+            color(u);
+        }
+    }
+
+    pair<int, int> dfs2(int v, int pr) {
+        pair<int, int> res = {-1, 0};
+        if (used2[v]) {
+            res.first = main_comp[v] = sz++;
+        }
+        was[v] = 1;
+        for (auto [u, w] : g[v]) {
+            if (u == pr) {
+                continue;
+            }
+            auto res2 = dfs2(u, v);
+            res2.second += w;
+            if (res2.first != -1) {
+                if (res.first == -1) {
+                    res = res2;
+                } else {
+                    if (main_comp[v] == -1) {
+                        main_comp[v] = sz++;
+                        main_bridges.push_back({main_comp[v], res.first, res.second});
+                        res = {main_comp[v], 0};
+                    }
+                    main_bridges.push_back({res.first, res2.first, res2.second});
+                }
+            }
+        }
+        return res;
+    }
+
+    pair<int, int> solve() {
+        for (int i = 0; i < n; i++) {
+            if (!tin[i]) {
+                dfs(i, -1);
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            if (comp[i] == -1) {
+                color(i);
+                sz++;
+            }
+        }
+        int cnt = sz;
+        sz = 0;
+        for (int i = 0; i < n; i++) {
+            g[i].clear();
+            if (used[i]) {
+                used2[comp[i]] = 1;
+            }
+        }
+        for (auto [v, u, w] : bridges) {
+            g[comp[v]].push_back({comp[u], w});
+            g[comp[u]].push_back({comp[v], w});
+        }
+        for (int i = 0; i < cnt; i++) {
+            if (!was[i]) {
+                dfs2(i, -1);
+            }
+        }
+        int sum = 0;
+        for (auto [v, u, w] : bridges) {
+            sum += w;
+        }
+        for (auto [v, u, w] : main_bridges) {
+            sum -= w;
+        }
+        return {sz, sum};
+    }
+};
+
+struct bridges_offline {
+    int n;
+    map<pair<int, int>, vector<int>> ind;
+    vector<pair<int, int>> edges, events;
+    vector<int> qu, ans;
+    Bicomp g;
+
+
+    void build(int n_) {
+        n = n_;
+        g.build(n);
+    }
+
+    bridges_offline(int n = 0) {
+        build(n);
+    }
+
+    void insert(int x, int y) {
+        if (x > y) {
+            swap(x, y);
+        }
+        ind[{x, y}].push_back((int) edges.size());
+        edges.push_back({x, y});
+        events.push_back({ind[{x, y}].back(), 1});
+    }
+
+    void erase(int x, int y) {
+        if (x > y) {
+            swap(x, y);
+        }
+        if ((int) ind[{x, y}].size() == 0) {
+            assert(false);
+        }
+        events.push_back({ind[{x, y}].back(), 0});
+        ind[{x, y}].pop_back();
+    }
+
+    void query() {
+        qu.push_back((int) events.size());
+    }
+
+    void dfs(int l, int r, int sz, int cur_ans, vector<array<int, 4>> events, vector<array<int, 3>> bridges) {
+        g.reset(sz);
+        vector<array<int, 4>> events2;
+        for (auto [vl, vr, v, u] : events) {
+            if (vl >= r || l >= vr) {
+                continue;
+            }
+            if (vl <= l && r <= vr) {
+                g.add_edge(v, u);
+            } else {
+                g.used[v] = g.used[u] = 1;
+                events2.push_back({vl, vr, v, u});
+            }
+        }
+        for (auto [v, u, w] : bridges) {
+            g.add_bridge(v, u, w);
+        }
+        auto res = g.solve();
+        auto bridges2 = g.main_bridges;
+        for (auto& [vl, vr, v, u] : events2) {
+            v = g.main_comp[g.comp[v]];
+            u = g.main_comp[g.comp[u]];
+        }
+        if (l + 1 == r) {
+            ans[l] = cur_ans + res.second;
+            for (auto [v, u, w] : bridges2) {
+                ans[l] += w;
+            }
+            return;
+        }
+        int m = (l + r) / 2;
+        dfs(l, m, res.first, cur_ans + res.second, events2, bridges2);
+        dfs(m, r, res.first, cur_ans + res.second, events2, bridges2);
+    }
+
+    vector<int> solve() {
+        int q = (int) qu.size();
+        if (q == 0) {
+            return {};
+        }
+        ans.resize(q);
+        vector<array<int, 4>> tmp;
+        vector<int> lst(edges.size(), -1);
+        for (int i = 0, l = 0, r; i < q; i++, l = r) {
+            r = qu[i];
+            for (int j = l; j < r; j++) {
+                int e = events[j].first;
+                if (events[j].second == 0) {
+                    tmp.push_back({lst[e], i, edges[e].first, edges[e].second});
+                    lst[e] = -1;
+                } else {
+                    lst[e] = i;
+                }
+            }
+        }
+        for (int i = 0; i < (int) edges.size(); i++) {
+            if (lst[i] != -1) {
+                tmp.push_back({lst[i], q, edges[i].first, edges[i].second});
+            }
+        }
+        dfs(0, q, n, 0, tmp, {});
+        return ans;
+    }
+};

@@ -1,0 +1,28 @@
+class dsu {
+public:
+    vector<int> p, rang;
+    int n;
+    dsu(int n) : n(n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        rang.resize(n, 1);
+    }
+    void clear() {
+        iota(p.begin(), p.end(), 0);
+        fill(rang.begin(), rang.end(), 1);
+    }
+    int get(int x) {
+        return (x == p[x] ? x : (p[x] = get(p[x])));
+    }
+    bool unite(int x, int y) {
+        x = get(x);
+        y = get(y);
+        if (rang[x] < rang[y]) swap(x, y);
+        if (x != y) {
+            p[y] = x;
+            rang[x] += (rang[x] == rang[y]);
+            return true;
+        }
+        return false;
+    }
+};

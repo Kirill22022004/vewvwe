@@ -1,0 +1,209 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+template <typename A, typename B>
+string to_string(pair<A, B> p);
+
+template <typename A, typename B, typename C>
+string to_string(tuple<A, B, C> p);
+
+template <typename A, typename B, typename C, typename D>
+string to_string(tuple<A, B, C, D> p);
+
+string to_string(const string& s) {
+    return '"' + s + '"';
+}
+
+string to_string(const char& s) {
+    string res = "'";
+    res += s;
+    res += "'";
+    return res;
+}
+
+string to_string(bool b) {
+    return (b ? "true" : "false");
+}
+
+string to_string(vector<bool> v) {
+    string res = "{";
+    for (int i = 0; i < static_cast<int>(v.size()); i++) {
+        if (i) res += ", ";
+        res += to_string(v[i]);
+    }
+    res += "}";
+    return res;
+}
+
+template <size_t N>
+string to_string(bitset<N> v) {
+    string res = "";
+    for (size_t i = 0; i < N; i++) {
+        res += static_cast<char>('0' + v[i]);
+    }
+    return res;
+}
+
+template <typename A>
+string to_string(A v) {
+    bool first = true;
+    string res = "{";
+    for (const auto &x : v) {
+        if (!first) {
+            res += ", ";
+        }
+        first = false;
+        res += to_string(x);
+    }
+    res += "}";
+    return res;
+}
+
+template <typename A, typename B>
+string to_string(pair<A, B> p) {
+    return "(" + to_string(p.first) + ", " + to_string(p.second) + ")";
+}
+
+template <typename A, typename B, typename C>
+string to_string(tuple<A, B, C> p) {
+    return "(" + to_string(get<0>(p)) + ", " + to_string(get<1>(p)) + ", " + to_string(get<2>(p)) + ")";
+}
+
+template <typename A, typename B, typename C, typename D>
+string to_string(tuple<A, B, C, D> p) {
+    return "(" + to_string(get<0>(p)) + ", " + to_string(get<1>(p)) + ", " + to_string(get<2>(p)) + ", " + to_string(get<3>(p)) + ")";
+}
+
+void debug_out() { cerr << endl; }
+
+template <typename Head, typename... Tail>
+void debug_out(Head H, Tail... T) {
+    cerr << " " << to_string(H);
+    debug_out(T...);
+}
+
+#define debug(...) cerr << "[" << #__VA_ARGS__ << "]:", debug_out(__VA_ARGS__)
+
+string A, B;
+long long TMP = 0;
+
+struct node {
+    vector<int> next;
+    int suf, pr, dp;
+    node() {
+        next.resize(3);
+        for (int i = 0; i < 3; i++) next[i] = -1;
+        suf = -1;
+        pr = -1;
+        dp = 0;
+    };
+};
+
+vector<vector<int>> nxt;
+vector<vector<long long>> mydp;
+vector<vector<pair<int, int>>> ids;
+vector<vector<pair<long long, long long>>> idr;
+vector<long long> idv;
+
+int last = 0;
+
+vector<node> a;
+
+int add(int x, char c) {
+    int ch = c - 'a';
+    int b = a.size();
+    a.push_back(node());
+    a[b].pr = x;
+    a[b].suf = 0;
+    a[b].dp = a[x].dp + 1;
+    for (; x != -1; x = a[x].suf) {
+        if (a[x].next[ch] == -1) {
+            a[x].next[ch] = b;
+            continue;
+        }
+        int c = a[x].next[ch];
+        if (a[c].pr == x) {
+            a[b].suf = c;
+            break;
+        }
+        int d = a.size();
+        a.push_back(node());
+        a[d].suf = a[c].suf;
+        a[c].suf = d;
+        a[b].suf = d;
+        a[d].pr = x;
+        a[d].next = a[c].next;
+        a[d].dp = a[x].dp + 1;
+        for (; x != -1 && a[x].next[ch] == c; x = a[x].suf) {
+            a[x].next[ch] = d;
+        }
+        break;
+    }
+    return b;
+}
+
+void get(int v, int l, int r) { // здесь должен быть массив used, иначе n * sqrt(n) ААААААААААААААААААААААААААа
+    if (v == 0) return;
+    get(a[v].pr, l, r - 1);
+    while (v != 0) {
+        int u = a[v].suf;
+        int delta = a[v].dp - a[u].dp;
+        int vl = l, vr = vl + delta - 1;
+        int p = A[vr] - 'a';
+        nxt[u][p] = v;
+        int M = A.size();
+        ids[u][p] = {M - vr - 1, M - vl - 1};
+        l += delta;
+        v = u;
+    }
+}
+
+void dfs(int v) {
+    idv[v] = TMP++;
+    for (int j = 0; j < 3; j++) {
+        if (nxt[v][j] == -1) {
+            idr[v][j] = {TMP, TMP};
+            TMP++;
+            continue;
+        }
+        int d = ids[v][j].second - ids[v][j].first;
+        idr[v][j] = {TMP, TMP + d - 1};
+        TMP += d;
+        dfs(nxt[v][j]);
+        mydp[v][j] = TMP;
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    a.push_back(node());
+    string s;
+    cin >> s;
+    A = s;
+    B = s;
+    reverse(B.begin(), B.end());
+    int n = s.size();
+    for (int i = 0; i < n; i++) {
+        last = add(last, s[i]);
+    }
+    int N = a.size();
+    debug(N);
+    for (int i = 0; i < N; i++) {
+        debug(a[i].next, a[i].suf, a[i].pr, a[i].dp);
+    }
+    mydp.resize(N, vector<long long> (3));
+    nxt.resize(N, vector<int> (3, -1));
+    ids.resize(N, vector<pair<int, int>> (3));
+    idr.resize(N, vector<pair<long long, long long>> (3));
+    idv.resize(N);
+    get(last, 0, n - 1);
+    dfs(0);
+    debug(nxt);
+    debug(ids);
+    debug(idr);
+    debug(idv);
+    debug(mydp);
+}

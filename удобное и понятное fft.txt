@@ -1,0 +1,49 @@
+#define my_double double
+#define cint complex<my_double>
+const my_double PI = atan2(0, -1);
+ 
+void fft(vector<cint>& a, bool inv) {
+    int n = a.size(), k = 0;
+    while ((1 << k) < n) k++;
+    for (int i = 0; i < n; i++) {
+        int j = 0;
+        for (int l = 0; l < k; l++) {
+            j |= (((i >> l) & 1) << (k - l - 1));
+        }
+        if (j < i) swap(a[j], a[i]);
+    }
+    for (int l = 1; l < n; l *= 2) {
+        my_double angle = (inv ? -1 : 1) * PI / l;
+        cint g(cos(angle), sin(angle));
+        for (int i = 0; i < n; i += 2 * l) {
+            cint c(1, 0);
+            for (int j = i; j < i + l; j++) {
+                cint x = a[j], y = a[j + l] * c;
+                a[j] = x + y;
+                a[j + l] = x - y;
+                c *= g;
+            }
+        }
+    }
+    if (inv) {
+        for (auto& x : a) x /= n;
+    }
+}
+ 
+template<typename T>
+vector<T> operator* (const vector<T>& A, const vector<T>& B) {
+    int n = (int) A.size(), m = (int) B.size(), N = 1;
+    while (N < 2 * max(n, m)) N *= 2;
+    vector<cint> a(N), b(N);
+    for (int i = 0; i < n; i++) a[i] = A[i];
+    for (int i = 0; i < m; i++) b[i] = B[i];
+    fft(a, 0);
+    fft(b, 0);
+    for (int i = 0; i < N; i++) a[i] *= b[i];
+    fft(a, 1);
+    vector<T> res(N);
+    for (int i = 0; i < N; i++) {
+        res[i] = (T) round(a[i].real());
+    }
+    return res;
+}

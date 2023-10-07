@@ -1,0 +1,21 @@
+vector<long long> dijkstra(vector<vector<pair<int, long long>>>& g, int start) {
+    int n = g.size();
+    vector<long long> dist(n, 1e18);
+    dist[start] = 0;
+    set<pair<long long, int>> st;
+    st.insert({0, start});
+    while (st.size() > 0) {
+        auto el = *st.begin();
+        st.erase(el);
+        long long v = el.second, d = el.first;
+        for (auto r : g[v]) {
+            long long x = r.first, d2 = r.second;
+            if (d + d2 < dist[x]) {
+                st.erase({dist[x], x});
+                dist[x] = d + d2;
+                st.insert({dist[x], x});
+            }
+        }
+    }
+    return dist;
+}

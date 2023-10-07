@@ -1,0 +1,199 @@
+struct point {
+    long long x = 0, y = 0;
+
+    point() {}
+
+    point(long long x, long long y) : x(x), y(y) {}
+
+    point operator +(const point& a) const {
+        return point(x + a.x, y + a.y);
+    }
+
+    point operator -(const point& a) const {
+        return point(x - a.x, y - a.y);
+    }
+
+    point operator -() const {
+        return point(-x, -y);
+    }
+
+    point operator *(long long k) const {
+        return point(x * k, y * k);
+    }
+
+    point operator /(long long k) const {
+        return point(x / k, y / k);
+    }
+
+    point& operator +=(const point& a) {
+        return *this = *this + a;
+    }
+
+    point& operator -=(const point& a) {
+        return *this = *this - a;
+    }
+
+    point& operator *=(long long k) {
+        return *this = *this * k;
+    }
+
+    point& operator /=(long long k) {
+        return *this = *this / k;
+    }
+
+    bool operator <(const point& a) const {
+        return y < a.y || (y == a.y && x < a.x);
+    }
+
+    bool operator >(const point& a) const {
+        return a < *this;
+    }
+
+    bool operator ==(const point& a) const {
+        return x == a.x && y == a.y;
+    }
+
+    bool operator <=(const point& a) const {
+        return !(*this > a);
+    }
+
+    bool operator >=(const point& a) const {
+        return !(*this < a);
+    }
+
+    bool operator !=(const point& a) const {
+        return !(*this == a);
+    }
+
+    long long len2() const {
+        return x * x + y * y;
+    }
+
+    long double len() const {
+        return sqrt((long double) x * x + (long double) y * y);
+    }
+};
+
+istream& operator >>(istream& in, point& a) {
+    in >> a.x;
+    in >> a.y;
+    return in;
+}
+
+ostream& operator <<(ostream& out, point& a) {
+    out << a.x << " " << a.y;
+    return out;
+}
+
+point middle(const point& a, const point& b) {
+    return (a + b) / 2;
+}
+
+point min(const point& a, const point& b) {
+    return (a < b ? a : b);
+}
+
+point max(const point& a, const point& b) {
+    return (a > b ? a : b);
+}
+
+long long operator *(const point& a, const point& b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+long long operator %(const point& a, const point& b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+long double dist(const point& a, const point& b) {
+    return (a - b).len();
+}
+
+long long dist2(const point& a, const point& b) {
+    return (a - b).len2();
+}
+
+bool in_triangle(const point& a, const point& b, const point& c, const point& p) {
+    return abs((a - p) * (b - p)) + abs((b - p) * (c - p)) + abs((c - p) * (a - p)) == abs((a - b) * (c - b));
+}
+
+int id(const point& a) {
+    if (a.x == 0 && a.y == 0) {
+        return 1;
+    }
+    if (a.x > 0 && a.y >= 0) {
+        return 1;
+    }
+    if (a.x <= 0 && a.y > 0) {
+        return 2;
+    }
+    if (a.x < 0 && a.y <= 0) {
+        return 3;
+    }
+    return 4;
+}
+
+bool cmp(const point& a, const point& b) {
+    if (id(a) != id(b)) {
+        return id(a) < id(b);
+    }
+    if (a * b == 0) {
+        return abs(a.x) + abs(a.y) < abs(b.x) + abs(b.y);
+    }
+    return a * b > 0;
+}
+
+bool cmp2(point a, point b, point c) {
+    return cmp(a - c, b - c);
+}
+
+struct line{
+    long long a = 1, b = 0, c = 0;
+
+    line() {}
+
+    line(long long a, long long b, long long c) : a(a), b(b), c(c) {}
+
+    line(const point& A, const point& B) {
+        a = B.y - A.y;
+        b = A.x - B.x;
+        c = - (a * A.x + b * A.y);
+    }
+};
+
+bool isonline(const line& l, const point& p) {
+    return l.a * p.x + l.b * p.y + l.c == 0;
+}
+
+vector<point> obl(vector<point> a) {
+    int n = (int) a.size();
+    point start = a[0];
+    for (int i = 0; i < n; i++) {
+        start = min(start, a[i]);
+    }
+    sort(a.begin(), a.end(), [&] (point a, point b) {
+         return cmp2(a, b, start);
+    });
+    vector<point> ch;
+    for (int i = 0; i < n; i++) {
+        while ((int) ch.size() >= 2 && (ch.back() - ch[(int) ch.size() - 2]) * (a[i] - ch.back()) <= 0) {
+            ch.pop_back();
+        }
+        ch.push_back(a[i]);
+    }
+    return ch;
+}
+
+bool in(vector<point>& a, point A) {
+    int n = (int) a.size();
+    int l = 1, r = n - 1;
+    while (l + 1 < r) {
+        int m = (l + r) / 2;
+        if ((a[m] - a[0]) * (A - a[0]) >= 0) {
+            l = m;
+        } else {
+            r = m;
+        }
+    }
+    return in_triangle(a[0], a[l], a[l + 1], A);
+}

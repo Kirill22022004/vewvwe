@@ -1,0 +1,27 @@
+struct Lagrange {
+    vector<int> x, y;
+    int n{};
+    void insert(int a, int b) {
+        x.push_back(a), y.push_back(b);
+        n += 1;
+    }
+    int query(int k) {
+        int res = 0;
+        for (int i = 0; i < n; ++i) {
+            int denom = 1;
+            for (int j = 0; j < n; ++j) {
+                if (i != j) {
+                    denom = 1LL * denom * (x[i] - x[j] + MOD) % MOD;
+                }
+            }
+            int num = y[i];
+            for (int j = 0; j < n; ++j) {
+                if (i != j) {
+                    num = 1LL * num * (k - x[j]) % MOD;
+                }
+            }
+            res = (res + 1LL * num * power(denom, MOD - 2)) % MOD;
+        }
+        return res;
+    }
+};

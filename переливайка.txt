@@ -1,0 +1,86 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define eb emplace_back
+#define ld long double
+
+vector<vector<int>> g;
+vector<int> ind;
+vector<vector<int>> dp;
+vector<int> ans;
+vector<vector<pii>> qu;
+
+void dfs(int v, int pr) {
+    int j = -1;
+    for (auto x : g[v]) {
+        if (x != pr) {
+            dfs(x, v);
+            if (j == -1 || dp[ind[j]].size() < dp[ind[x]].size()) j = x;
+        }
+    }
+    if (j == -1) {
+        ind[v] = v;
+        dp[ind[v]].pb(1);
+        for (auto el : qu[v]) {
+            if (el.fi < dp[ind[v]].size()) {
+                int z = (int) dp[ind[v]].size() - el.fi - 1;
+                ans[el.se] = dp[ind[v]][z];
+            }
+        }
+        return;
+    }
+    ind[v] = ind[j];
+    dp[ind[v]].pb(1);
+    for (auto x : g[v]) {
+        if (x != pr && x != j) {
+            for (int i = 0; i < dp[ind[x]].size(); i++) {
+                int c = dp[ind[x]][(int) dp[ind[x]].size() - i - 1];
+                dp[ind[v]][(int) dp[ind[v]].size() - 1 - (i + 1)] += c;
+            }
+        }
+    }
+    for (auto el : qu[v]) {
+        if (el.fi < dp[ind[v]].size()) {
+            int z = (int) dp[ind[v]].size() - el.fi - 1;
+            ans[el.se] = dp[ind[v]][z];
+        }
+    }
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n;
+    cin >> n;
+    g.resize(n);
+    ind.resize(n);
+    qu.resize(n);
+    dp.resize(n);
+    for (int i = 1; i < n; i++) {
+        int x;
+        cin >> x;
+        x--;
+        g[x].pb(i);
+        g[i].pb(x);
+    }
+    int q;
+    cin >> q;
+    ans.resize(q);
+    for (int i = 0; i < q; i++) {
+        int v, h;
+        cin >> v >> h;
+        v--;
+        qu[v].pb({h, i});
+    }
+    dfs(0, -1);
+    for (auto x : ans) cout << x << '\n';
+}

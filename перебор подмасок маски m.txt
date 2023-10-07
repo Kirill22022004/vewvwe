@@ -1,0 +1,5 @@
+int m;
+for (int i = m; ; i = (i - 1) & m) {
+    
+    if (i == 0) break;
+}

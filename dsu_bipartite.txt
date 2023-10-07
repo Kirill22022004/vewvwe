@@ -1,0 +1,39 @@
+struct dsu_bipartite {
+    vector<int> p, d, sz;
+
+    dsu_bipartite(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        d.resize(n);
+        sz.resize(n, 1);
+    }
+
+    pair<int, int> get(int v) {
+        if (v == p[v]) {
+            return {v, d[v]};
+        }
+        auto res = get(p[v]);
+        res.second ^= d[v];
+        return res;
+    }
+
+    bool merge(int v, int u, int x) {
+        auto res = get(v);
+        auto res2 = get(u);
+        if (res.first == res2.first) {
+            if ((res.second ^ x ^ 1) == res2.second) {
+                return false;
+            }
+            return true;
+        }
+        if (sz[res.first] > sz[res2.first]) {
+            swap(res, res2);
+        }
+        p[res.first] = res2.first;
+        sz[res2.first] += sz[res.first];
+        if ((res.second ^ x ^ 1) == res2.second) {
+            d[res.first] ^= 1;
+        }
+        return true;
+    }
+};

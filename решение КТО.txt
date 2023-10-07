@@ -1,0 +1,27 @@
+int gcd(int a, int b, int &x, int &y) {
+    if (a == 0) {
+        x = 0, y = 1;
+        return b;
+    }
+    int x1, y1;
+    int res = gcd(b % a, a, x1, y1);
+    x = y1 - x1 * (b / a);
+    y = x1;
+    return res;
+}
+
+int solve(vector<pair<int, int>> res) { // ОНО СЛОМАННОЕ НЕ ИСПОЛЬЗОВАТЬ
+    pair<int, int> ans = res[0];
+    for (int i = 1; i < res.size(); i++) {
+        int x, y;
+        int g = gcd(ans.second, res[i].second, x, y);
+        y *= -1;
+        int b = res[i].first - ans.first;
+	if (b % g != 0) return -1; 
+        x *= b / g, y *= b / g;
+        int md = ans.second * res[i].second / g;
+        ans.first = ((ans.second * x + ans.first) % md + md) % md;
+        ans.second *= res[i].second / g;
+    }
+    return ans.first;
+} // ОНО СЛОМАННОЕ НЕ ИСПОЛЬЗОВАТЬ

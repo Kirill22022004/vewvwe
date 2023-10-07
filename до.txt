@@ -1,0 +1,30 @@
+vector<int> t, a;
+
+void build(int v, int l, int r) {
+    if (l + 1 == r) {
+        t[v] = a[l];
+        return;
+    }
+    int m = (l + r) / 2;
+    build(v * 2 + 1, l, m);
+    build(v * 2 + 2, m, r);
+    t[v] = max(t[v * 2 + 1], t[v * 2 + 2]);
+}
+
+void update(int v, int l, int r, int i, int x) {
+    if (l + 1 == r) {
+        t[v] = x;
+        return;
+    }
+    int m = (l + r) / 2;
+    if (i < m) update(v * 2 + 1, l, m, i, x);
+    else update(v * 2 + 2, m, r, i, x);
+    t[v] = max(t[v * 2 + 1], t[v * 2 + 2]);
+}
+
+int get(int v, int l, int r, int l1, int r1) {
+    if (l >= r1 || l1 >= r) return -1e18;
+    if (l1 <= l && r <= r1) return t[v];
+    int m = (l + r) / 2;
+    return max(get(v * 2 + 1, l, m, l1, r1), get(v * 2 + 2, m, r, l1, r1));
+}

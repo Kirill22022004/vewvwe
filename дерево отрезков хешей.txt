@@ -1,0 +1,58 @@
+struct segment_hash {
+    int n, mod, p;
+    vector<int> pw, t;
+
+    int merge(int l, int r, int size_r) {
+        return (l * 1ll * pw[size_r] + r) % mod;
+    }
+
+    segment_hash(string s, int _mod = 1e9 + 7, int _p = 101) {
+        mod = _mod, p = _p;
+        n = (int) s.size();
+        t.resize(4 * n);
+        pw.resize(n + 1, 1);
+        for (int i = 1; i <= n; i++) {
+            pw[i] = (pw[i - 1] * 1ll * p) % mod;
+        }
+        build(0, 0, n, s);
+    }
+
+    void build(int v, int l, int r, string& s) {
+        if (l + 1 == r) {
+            t[v] = (s[l] - 'a');
+            return;
+        }
+        int m = (l + r) / 2;
+        build(v * 2 + 1, l, m, s);
+        build(v * 2 + 2, m, r, s);
+        t[v] = merge(t[v * 2 + 1], t[v * 2 + 2], r - m);
+    }
+
+    void update(int v, int l, int r, int i, char c) {
+        if (l + 1 == r) {
+            t[v] = (c - 'a');
+            return;
+        }
+        int m = (l + r) / 2;
+        if (i < m) {
+            update(v * 2 + 1, l, m, i, c);
+        }
+        else {
+            update(v * 2 + 2, m, r, i, c);
+        }
+        t[v] = merge(t[v * 2 + 1], t[v * 2 + 2], r - m);
+    }
+
+    void update(int i, char c) { update(0, 0, n, i, c); }
+
+    int get(int v, int l, int r, int l1, int r1) {
+        if (l1 >= r || l >= r1) return 0;
+        if (l1 <= l && r <= r1) return t[v];
+        int m = (l + r) / 2;
+        int L = get(v * 2 + 1, l, m, l1, r1), R = get(v * 2 + 2, m, r, l1, r1);
+        int size_R = max((int) 0, (int) min(r, r1) - max(m, l1));
+        return merge(L, R, size_R);
+    }
+
+    int get(int l, int r) { return get(0, 0, n, l, r + 1); }
+};

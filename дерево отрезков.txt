@@ -1,0 +1,128 @@
+class segtree {
+  public:
+    // CHANGE IT
+    struct node {
+        long long sum = 0, val = 0;
+        bool put = false;
+ 
+        void apply(int l, int r, long long v) {
+            put = false;
+            val = v;
+            sum = v * (r - l);
+        }
+    };
+ 
+    node unite(const node& a, const node& b) {
+        node res;
+        res.sum = a.sum + b.sum;
+        return res;
+    }
+ 
+    void push(int v, int l, int r) {
+        if (tree[v].put) {
+            int m = (l + r) / 2;
+            tree[v * 2 + 1].apply(l, m, tree[v].val);
+            tree[v * 2 + 2].apply(m, r, tree[v].val);
+            tree[v].put = false;
+        }
+    }
+ 
+    void pull(int v) {
+        tree[v] = unite(tree[v * 2 + 1], tree[v * 2 + 2]);
+    }
+ 
+    // CHANGE IT
+ 
+    int n;
+    vector<node> tree;
+ 
+    void build(int v, int l, int r) {
+        if (l + 1 == r) return;
+        int m = (l + r) / 2;
+        build(v * 2 + 1, l, m);
+        build(v * 2 + 2, m, r);
+        pull(v);
+    }
+ 
+    template <typename M>
+    void build(int v, int l, int r, vector<M>& a) {
+        if (l + 1 == r) {
+            tree[v].apply(l, r, a[l]);
+            return;
+        }
+        int m = (l + r) / 2;
+        build(v * 2 + 1, l, m, a);
+        build(v * 2 + 2, m, r, a);
+        pull(v);
+    }
+ 
+    node get(int v, int l, int r, int l1, int r1) {
+        if (l1 <= l && r <= r1) {
+            return tree[v];
+        }
+        int m = (l + r) / 2;
+        push(v, l, r);
+        node res{};
+        if (r1 <= m) {
+            res = get(v * 2 + 1, l, m, l1, r1);
+        }
+        else if (l1 >= m) {
+            res = get(v * 2 + 2, m, r, l1, r1);
+        }
+        else {
+            res = unite(get(v * 2 + 1, l, m, l1, r1), get(v * 2 + 2, m, r, l1, r1));
+        }
+        pull(v);
+        return res;
+    }
+ 
+    template <typename M>
+    void update(int v, int l, int r, int l1, int r1, const M& x) {
+        if (l1 >= r || l >= r1) return;
+        if (l1 <= l && r <= r1) {
+            tree[v].apply(l, r, x);
+            return;
+        }
+        int m = (l + r) / 2;
+        push(v, l, r);
+        update(v * 2 + 1, l, m, l1, r1, x);
+        update(v * 2 + 2, m, r, l1, r1, x);
+        pull(v);
+    }
+ 
+    segtree(int N) : n(N) {
+        assert(n > 0);
+        tree.resize(4 * n);
+        build(0, 0, n);
+    }
+ 
+    template <typename M>
+    segtree(vector<M>& a) {
+        n = (int) a.size();
+        assert(n > 0);
+        tree.resize(4 * n);
+        build(0, 0, n, a);
+    }
+ 
+    node get(int l, int r) {
+        assert(0 <= l && l <= r && r <= n - 1);
+        return get(0, 0, n, l, r + 1);
+    }
+ 
+    node get(int i) {
+        assert(0 <= i && i <= n - 1);
+        return get(0, 0, n, i, i + 1);
+    }
+ 
+    template <typename M>
+    void update(int l, int r, const M& x) {
+        assert(0 <= l && l <= r && r <= n - 1);
+        update(0, 0, n, l, r + 1, x);
+    }
+ 
+    template <typename M>
+    void update(int i, const M& x) {
+        assert(0 <= i && i <= n - 1);
+        update(0, 0, n, i, i + 1, x);
+    }
+};

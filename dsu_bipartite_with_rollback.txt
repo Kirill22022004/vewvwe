@@ -1,0 +1,67 @@
+struct dsu_bipartite_with_rollback {
+    vector<int> p, d, sz, state;
+    vector<array<int, 3>> changes;
+    int bipartite = true;
+
+    void build(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        d.resize(n);
+        sz.resize(n, 1);
+    }
+
+    dsu_bipartite_with_rollback(int n = 0) {
+        build(n);
+    }
+
+    pair<int, int> get(int v) {
+        if (v == p[v]) {
+            return {v, d[v]};
+        }
+        auto res = get(p[v]);
+        res.second ^= d[v];
+        return res;
+    }
+
+    void merge(int v, int u, int x) {
+        auto res = get(v);
+        auto res2 = get(u);
+        if (res.first == res2.first) {
+            if ((res.second ^ x ^ 1) == res2.second) {
+                changes.push_back({0, bipartite, 1});
+                bipartite = 0;
+            }
+            return;
+        }
+        if (sz[res.first] > sz[res2.first]) {
+            swap(res, res2);
+        }
+        p[res.first] = res2.first;
+        sz[res2.first] += sz[res.first];
+        changes.push_back({res.first, 0, 0});
+        if ((res.second ^ x ^ 1) == res2.second) {
+            d[res.first] ^= 1;
+            changes.back()[1] = 1;
+        }
+    }
+
+    void save() {
+        state.push_back((int) changes.size());
+    }
+
+    void rollback() {
+        int k = state.back();
+        state.pop_back();
+        while ((int) changes.size() > k) {
+            auto [v, delta, res] = changes.back();
+            changes.pop_back();
+            if (!res) {
+                sz[p[v]] -= sz[v];
+                p[v] = v;
+                d[v] ^= delta;
+            } else {
+                bipartite = delta;
+            }
+        }
+    }
+};

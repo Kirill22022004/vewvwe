@@ -1,0 +1,51 @@
+int n, m;
+vector<vector<int>> g, g2;
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    while (cin >> n >> m) {
+        vector<string> ans(n, "DRAW");
+        g.clear();
+        g.resize(n);
+        g2.clear();
+        g2.resize(n);
+        vector<int> cnt(n, 0);
+        for (int i = 0; i < m; i++) {
+            int x, y;
+            cin >> x >> y;
+            x--, y--;
+            g[x].pb(y);
+            g2[y].pb(x);
+        }
+        queue<int> st;
+        for (int i = 0; i < n; i++) {
+            if (g[i].size() == 0) {
+                ans[i] = "SECOND";
+                st.push(i);
+            }
+        }
+        while (st.size() > 0) {
+            int x = st.front();
+            st.pop();
+            for (auto pr : g2[x]) {
+                if (ans[pr] != "DRAW") continue;
+                if (ans[x] == "SECOND") {
+                    ans[pr] = "FIRST";
+                    st.push(pr);
+                    continue;
+                }
+                cnt[pr]++;
+                if (cnt[pr] == (int) g[pr].size()) {
+                    ans[pr] = "SECOND";
+                    st.push(pr);
+                }
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            cout << ans[i] << '\n';
+        }
+        cout << '\n';
+    }
+}

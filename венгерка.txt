@@ -1,0 +1,81 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+//#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define sz(a) (int) (a).size()
+#define eb emplace_back
+#define ld long double
+#define ve vector
+#define forn(i, n) for (int i = 0; i < n; i++)
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n;
+    cin >> n;
+    ve<ve<int>> a(n, ve<int> (n));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cin >> a[i][j];
+        }
+    }
+    ve<int> pa(n + 1, -1), pb(n + 1, -1), minv(n), used(n + 1), u(n + 1), v(n + 1), way(n, -1);
+    for (int i = 0; i < n; i++) {
+        fill(all(minv), (int) 1e9);
+        fill(all(used), 0);
+        pb[n] = i;
+        pa[i] = n;
+        int tmpj = n;
+        do {
+            used[tmpj] = 1;
+            int tmpi = pb[tmpj];
+            int delta = (int) 1e9;
+            int newj = -1;
+            for (int j = 0; j < n; j++) {
+                if (!used[j]) {
+                    int cur = a[tmpi][j] - u[tmpi] - v[j];
+                    if (cur < minv[j]) {
+                        minv[j] = cur;
+                        way[j] = tmpj;
+                    }
+                    if (minv[j] < delta) {
+                        delta = minv[j];
+                        newj = j;
+                    }
+                }
+            }
+            for (int j = 0; j <= n; j++) {
+                if (used[j]) {
+                    v[j] -= delta;
+                    u[pb[j]] += delta;
+                }
+                else {
+                    minv[j] -= delta;
+                }
+            }
+            tmpj = newj;
+        } while (pb[tmpj] != -1);
+        do {
+            int j = way[tmpj];
+            pb[tmpj] = pb[j];
+            pa[pb[j]] = tmpj;
+            tmpj = j;
+        } while (tmpj != n);
+    }
+    int ans = 0;
+    for (int i = 0; i < n; i++) {
+        ans += a[i][pa[i]];
+    }
+    cout << ans << '\n';
+    for (int i = 0; i < n; i++) {
+        cout << i + 1 << " " << pa[i] + 1 << '\n';
+    }
+}

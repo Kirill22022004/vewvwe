@@ -1,0 +1,45 @@
+template<typename T, class F = function<T(const T&, const T&)>>
+
+class SparseTable2 {
+public :
+    int n;
+    vector<vector<vector<vector<T>>>> st;
+    F func;
+
+    SparseTable2(const vector<vector<T>>& a, const F& f) : func(f) {
+        int n = (int) a.size();
+        int m = (int) a[0].size();
+        int MAXN = 32 - __builtin_clz(n);
+        int MAXM = 32 - __builtin_clz(m);
+        st.resize(MAXN, vector<vector<vector<T>>> (MAXM));
+        st[0][0] = a;
+        for (int I = 0; I < MAXN; I++) {
+            for (int J = 0; J < MAXM; J++) {
+                if (I == 0 && J == 0) continue;
+                st[I][J].resize(n - (1 << I) + 1, vector<T> (m - (1 << J) + 1));
+                if (I > 0) {
+                    for (int i = 0; i <= n - (1 << I); i++) {
+                        for (int j = 0; j <= m - (1 << J); j++) {
+                            st[I][J][i][j] = func(st[I - 1][J][i][j], st[I - 1][J][i + (1 << (I - 1))][j]);
+                        }
+                    }
+                }
+                else {
+                    for (int i = 0; i <= n - (1 << I); i++) {
+                        for (int j = 0; j <= m - (1 << J); j++) {
+                            st[I][J][i][j] = func(st[I][J - 1][i][j], st[I][J - 1][i][j + (1 << (J - 1))]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    T get(int x, int y, int x2, int y2) const {
+        int lgn = 32 - __builtin_clz(x2 - x + 1) - 1;
+        int lgm = 32 - __builtin_clz(y2 - y + 1) - 1;
+        T res = func(st[lgn][lgm][x][y], st[lgn][lgm][x2 - (1 << lgn) + 1][y2 - (1 << lgm) + 1]);
+        T res2 = func(st[lgn][lgm][x][y2 - (1 << lgm) + 1] , st[lgn][lgm][x2 - (1 << lgn) + 1][y]);
+        return func(res, res2);
+    }
+}; // SparseTable2<int> X(x, [&] (int _x, int _y) {return max(_x, _y);}); - создание

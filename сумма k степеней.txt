@@ -1,0 +1,175 @@
+#include "bits/stdc++.h"
+
+using namespace std;
+
+constexpr int mod = 998244353;
+
+int normalize(int x) {
+    if (x >= mod) {
+        x -= mod;
+    }
+    if (x < 0) {
+        x += mod;
+    }
+    return x;
+}
+
+template<typename T>
+T power(T a, int n) {
+    T res = 1;
+    for (; n; n /= 2, a *= a) {
+        if (n % 2) {
+            res *= a;
+        }
+    }
+    return res;
+}
+
+class Mint {
+public:
+    int x;
+
+    Mint(int x = 0) : x(normalize(x)) {}
+    Mint(long long x) : x(normalize(x % mod)) {}
+
+    int val() const {
+        return x;
+    }
+
+    Mint operator-() const {
+        return Mint(normalize(mod - x));
+    }
+
+    Mint inv() const {
+        return power(*this, mod - 2);
+    }
+
+    Mint& operator*=(const Mint& rhs) {
+        x = x * 1ll * rhs.x % mod;
+        return *this;
+    }
+
+    Mint& operator+=(const Mint& rhs) {
+        x = normalize(x + rhs.x);
+        return *this;
+    }
+
+    Mint& operator-=(const Mint& rhs) {
+        x = normalize(x - rhs.x);
+        return *this;
+    }
+
+    Mint& operator/=(const Mint& rhs) {
+        return *this *= rhs.inv();
+    }
+
+    friend Mint operator*(const Mint& lhs, const Mint& rhs) {
+        Mint res = lhs;
+        res *= rhs;
+        return res;
+    }
+
+    friend Mint operator+(const Mint& lhs, const Mint& rhs) {
+        Mint res = lhs;
+        res += rhs;
+        return res;
+    }
+
+    friend Mint operator-(const Mint& lhs, const Mint& rhs) {
+        Mint res = lhs;
+        res -= rhs;
+        return res;
+    }
+
+    friend Mint operator/(const Mint& lhs, const Mint& rhs) {
+        Mint res = lhs;
+        res /= rhs;
+        return res;
+    }
+};
+
+using mint = Mint;
+
+vector<mint> fact(1, 1);
+vector<mint> inv_fact(1, 1);
+
+void fast(int n) {
+    while ((int) fact.size() < n + 1) {
+        fact.push_back(fact.back() * (int) fact.size());
+    }
+    inv_fact.resize(n + 1, 1);
+    inv_fact[n] = 1 / fact[n];
+    for (int i = n - 1; i >= 2; i--) {
+        inv_fact[i] = inv_fact[i + 1] * (i + 1);
+    }
+}
+
+mint C(int n, int k) {
+    if (k < 0 || k > n) {
+        return 0;
+    }
+    while ((int) fact.size() < n + 1) {
+        fact.push_back(fact.back() * (int) fact.size());
+        inv_fact.push_back(fact.back().inv());
+    }
+    return fact[n] * inv_fact[k] * inv_fact[n - k];
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, k;
+    cin >> n >> k;
+    vector<mint> sump(n + 1);
+    sump[0] = k;
+    for (int i = 1; i <= n; i++) {
+        sump[i] = power(mint(k + 1), i + 1);
+        sump[i] -= 1;
+        for (int j = 0; j < i; j++) {
+            sump[i] -= C(i + 1, j) * sump[j];
+        }
+        sump[i] /= (i + 1);
+    }
+    mint ans = 0;
+    for (int i = 1; i <= n; i++) {
+        for (int x = 0; x < i; x++) {
+            for (int y = 0; y <= n - i; y++) {
+                for (int cnt = 0; cnt < n - x - y; cnt++) {
+                    if (cnt < i - x) {
+                        continue;
+                    }
+                    mint res = C(i - 1, x) * C(n - i, y) * C(n - x - y - 1, cnt);
+                    mint sum = 0;
+                    bool fast = true;
+                    if (!fast) { // slow
+                        for (int z = 1; z <= k; z++) {
+                            sum += z * power(mint(k - z), cnt) * power(mint(z - 1), n - x - y - 1 - cnt);
+                        }
+                    }
+                    if (fast) { // fast
+                        vector<mint> dp(n + 1);
+                        for (int p = 0; p <= cnt; p++) {
+                            for (int p2 = 0; p2 <= n - x - y - 1 - cnt; p2++) {
+                                mint K = 1;
+                                if ((n - x - y - 1 - cnt - p2) % 2 == 1) {
+                                    K *= -1;
+                                }
+                                if (p % 2 == 1) {
+                                    K *= -1;
+                                }
+                                K *= power(mint(k), cnt - p);
+                                dp[1 + p + p2] += C(cnt, p) * C(n - x - y - 1 - cnt, p2) * K;
+                            }
+                        }
+                        for (int p = 0; p <= n; p++) {
+                            sum += dp[p] * sump[p];
+                        }
+                    }
+                    ans += res * sum;
+                }
+            }
+        }
+    }
+    cout << ans.x;
+}

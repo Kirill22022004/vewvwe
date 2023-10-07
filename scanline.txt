@@ -1,0 +1,129 @@
+#include "bits/stdc++.h"
+
+using namespace std;
+
+struct point {
+    int x, y;
+};
+
+struct edge {
+    point a, b;
+    bool up;
+    int id;
+};
+
+int curx = -1;
+double eps = 1e-9;
+
+double get_y(const edge& a) {
+    return a.a.y + (curx - a.a.x) * (double) (a.b.y - a.a.y) / (double) (a.b.x - a.a.x);
+}
+
+bool operator<(const edge& a, const edge& b) {
+    if (a.id == b.id) {
+        if (a.up == b.up) {
+            return false;
+        }
+        return !a.up;
+    }
+    return get_y(a) + eps < get_y(b);
+}
+
+struct query {
+    int x;
+    bool add;
+    edge e;
+};
+
+bool operator<(const query& a, const query& b) {
+    if (a.x != b.x) {
+        return a.x < b.x;
+    }
+    if (a.add != b.add) {
+        return a.add < b.add;
+    }
+    curx = a.x;
+    return !(a.e < b.e);
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n;
+    cin >> n;
+    vector<query> events;
+    for (int i = 0; i < n; i++) {
+        int k;
+        cin >> k;
+        point a;
+        cin >> a.x >> a.y;
+        point prev = a;
+        for (int j = 1; j < k; j++) {
+            point b;
+            cin >> b.x >> b.y;
+            if (prev.x < b.x) {
+                edge e = {prev, b, false, i};
+                events.push_back({prev.x, true, e});
+                events.push_back({b.x, false, e});
+            } else if (prev.x > b.x) {
+                edge e = {b, prev, true, i};
+                events.push_back({b.x, true, e});
+                events.push_back({prev.x, false, e});
+            }
+            prev = b;
+        }
+        if (prev.x < a.x) {
+            edge e = {prev, a, false, i};
+            events.push_back({prev.x, true, e});
+            events.push_back({a.x, false, e});
+        } else if (prev.x > a.x) {
+            edge e = {a, prev, true, i};
+            events.push_back({a.x, true, e});
+            events.push_back({prev.x, false, e});
+        }
+    }
+    vector<vector<int>> g(n + 1);
+    sort(events.begin(), events.end());
+    set<edge> st;
+    vector<int> used(n, -1);
+    for (auto [x, add, e] : events) {
+        curx = x;
+        if (add) {
+            auto it = st.lower_bound(e);
+            if (e.up == 1 && used[e.id] == -1) {
+                if (it == st.end()) {
+                    used[e.id] = n;
+                    g[n].push_back(e.id);
+                } else {
+                    if (it->up) {
+                        used[e.id] = it->id;
+                        g[it->id].push_back(e.id);
+                    } else {
+                        used[e.id] = used[it->id];
+                        g[used[it->id]].push_back(e.id);
+                    }
+                }
+            }
+            st.insert(e);
+        } else {
+            st.erase(e);
+        }
+    }
+    int ans = 0;
+    vector<int> h(n + 1);
+    function<int(int)> dfs = [&] (int v) {
+        vector<int> res = {h[v]};
+        for (auto u : g[v]) {
+            h[u] = h[v] + 1;
+            res.push_back(dfs(u));
+        }
+        sort(res.rbegin(), res.rend());
+        if ((int) res.size() >= 2) {
+            ans = max(ans, (res[0] + res[1] - h[v] - h[v]) + res[0]);
+        }
+        return res[0];
+    };
+    dfs(n);
+    cout << ans;
+}

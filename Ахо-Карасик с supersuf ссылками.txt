@@ -1,0 +1,47 @@
+int A = 26;
+vector<vector<int>> go, term;
+vector<int> suf, supersuf;
+
+void build() {
+    go.push_back(vector<int> (A));
+    suf.push_back(0);
+    supersuf.push_back(0);
+    term.push_back(vector<int> (0));
+}
+
+void add(string s, int i) {
+    int v = 0;
+    for (auto c : s) {
+        if (go[v][c - 'a'] == 0) {
+            go[v][c - 'a'] = go.size();
+            go.push_back(vector<int> (A));
+            suf.push_back(0);
+            supersuf.push_back(0);
+            term.push_back(vector<int> (0));
+        }
+        v = go[v][c - 'a'];
+    }
+    term[v].push_back(i);
+}
+
+void bfs() {
+    queue<int> q;
+    q.push(0);
+    while (!q.empty()) {
+        auto v = q.front();
+        q.pop();
+        for (int i = 0; i < A; i++) {
+            if (go[v][i] == 0) {
+                go[v][i] = go[suf[v]][i];
+            }
+            else {
+                if (v) {
+                    suf[go[v][i]] = go[suf[v]][i];
+                    if (term[suf[go[v][i]]].size() > 0) supersuf[go[v][i]] = suf[go[v][i]];
+                    else supersuf[go[v][i]] = supersuf[suf[go[v][i]]];
+                }
+                q.push(go[v][i]);
+            }
+        }
+    }
+}

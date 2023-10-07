@@ -1,0 +1,180 @@
+#include "bits/stdc++.h"
+
+using namespace std;
+
+struct permutation {
+    int n;
+    vector<int> p;
+
+    permutation(int n = 0) :  n(n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+    }
+
+    permutation(vector<int> p) : n((int) p.size()), p(p) {}
+
+    void read() {
+        for (int i = 0; i < n; i++) {
+            cin >> p[i];
+            p[i]--;
+        }
+    }
+
+    int size() const {
+        return n;
+    }
+
+    int& operator[](size_t i) {
+        return p[i];
+    }
+
+    const int& operator[](size_t i) const {
+        return p[i];
+    }
+
+    friend permutation operator*(const permutation& a, const permutation& b) {
+        assert(a.size() == b.size());
+        permutation c(a.size());
+        for (int i = 0; i < a.size(); i++) {
+            c[i] = a[b[i]];
+        }
+        return c;
+    }
+
+    friend permutation inv(permutation& a) {
+        permutation c(a.size());
+        for (int i = 0; i < a.size(); i++) {
+            c[a[i]] = i;
+        }
+        return c;
+    }
+
+    void print() {
+        cout << "n = " << n << " :";
+        for (int i = 0; i < n; i++) {
+            cout << " " << p[i];
+        }
+        cout << endl;
+    }
+};
+
+vector<int> mul(vector<int> a, vector<int> b) {
+    int n = (int) a.size(), m = (int) b.size();
+    vector<int> c(n + m);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            c[i + j] += a[i] * b[j];
+        }
+    }
+    for (int i = 0, tmp = 0; i < (int) c.size() || tmp; i++) {
+        if (i == (int) c.size()) {
+            c.push_back(0);
+        }
+        tmp += c[i];
+        c[i] = tmp % 10;
+        tmp /= 10;
+    }
+    while ((int) c.size() > 1 && c.back() == 0) {
+        c.pop_back();
+    }
+    return c;
+}
+
+void dfs(const permutation& cur, const vector<permutation>& a, vector<permutation>& gen) {
+    gen[cur[0]] = cur;
+    for (const permutation& g : a) {
+        if (gen[g[cur[0]]].size() == 0) {
+            dfs(g * cur, a, gen);
+        }
+    }
+}
+
+void rebuild(vector<permutation>& a) {
+    if (a.empty()) {
+        return;
+    }
+    int n = a[0].size();
+    vector<permutation> b;
+    vector<vector<int>> pos(n, vector<int> (n, -1));
+    for (auto p : a) {
+        for (int i = 0; i < n; i++) {
+            assert(p[i] >= i);
+            if (p[i] == i) {
+                continue;
+            }
+            if (pos[i][p[i]] == -1) {
+                pos[i][p[i]] = (int) b.size();
+                b.push_back(p);
+                break;
+            } else {
+                p = inv(b[pos[i][p[i]]]) * p;
+            }
+        }
+    }
+    assert((int) b.size() <= n * (n - 1) / 2);
+    a = b;
+}
+
+vector<int> calc(vector<permutation> a) {
+    if (a.empty()) {
+        return {1};
+    }
+    int n = a[0].size();
+    if (n == 0) {
+        return {1};
+    }
+    vector<permutation> gen(n, permutation());
+    dfs(permutation(n), a, gen);
+    vector<permutation> invgen(n, permutation());
+    for (int i = 0; i < n; i++) {
+        invgen[i] = inv(gen[i]);
+    }
+    int sz = 0;
+    vector<permutation> b;
+    for (int i = 0; i < n; i++) {
+        if (gen[i].size() == 0) {
+            continue;
+        }
+        sz++;
+        for (const permutation& g : a) {
+            permutation x = g * gen[i];
+            b.emplace_back(invgen[x[0]] * x);
+        }
+    }
+    for (permutation& g : b) {
+        assert(g[0] == 0);
+        g.p.erase(g.p.begin());
+        g.n--;
+        for (auto& x : g.p) {
+            x--;
+        }
+    }
+    rebuild(b);
+    vector<int> num;
+    if (sz == 0) {
+        num = {0};
+    } else {
+        while (sz) {
+            num.push_back(sz % 10);
+            sz /= 10;
+        }
+    }
+    return mul(num, calc(b));
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, m;
+    cin >> n >> m;
+    vector<permutation> a(m, n);
+    for (int i = 0; i < m; i++) {
+        a[i].read();
+    }
+    vector<int> ans = calc(a);
+    reverse(ans.begin(), ans.end());
+    for (auto x : ans) {
+        cout << x;
+    }
+}

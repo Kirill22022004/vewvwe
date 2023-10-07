@@ -1,0 +1,20 @@
+vector<int> prefix(string s) {
+    int n = s.size();
+    vector<int> pref(n, 0);
+    int tmp = 0;
+    for (int i = 1; i < n; i++) {
+        while (tmp > 0 && s[i] != s[tmp]) {
+            tmp = pref[tmp - 1];
+        }
+        tmp += (s[i] == s[tmp]);
+        pref[i] = tmp;
+    }
+    return pref;
+}
+
+int period(string s) {
+    int n = s.size();
+    vector<int> a = prefix(s);
+    if (n % (n - a[n - 1]) == 0) return n - a[n - 1];
+    else return n;
+}

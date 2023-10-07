@@ -1,0 +1,69 @@
+vector<int> find_kss(vector<vector<int>>& g) {
+    int n = g.size();
+    vector<vector<int>> g2(n);
+    for (int i = 0; i < n; i++) {
+        for (auto x : g[i]) {
+            g2[x].push_back(i);
+        }
+    }
+    vector<int> ts, comp(n, -1);
+    vector<bool> used(n, false);
+    function<void(int)> topsort = [&] (int v) {
+        used[v] = true;
+        for (auto x : g[v]) {
+            if (!used[x]) {
+                topsort(x);
+            }
+        }
+        ts.push_back(v);
+    };
+    function<void(int, int)> dfs = [&] (int v, int c) {
+        comp[v] = c;
+        for (auto x : g2[v]) {
+            if (comp[x] == -1) {
+                dfs(x, c);
+            }
+        }
+    };
+    for (int i = 0; i < n; i++) {
+        if (!used[i]) {
+            topsort(i);
+        }
+    }
+    reverse(ts.begin(), ts.end());
+    int cnt = 0;
+    for (auto x : ts) {
+        if (comp[x] == -1) {
+            dfs(x, cnt);
+            cnt++;
+        }
+    }
+    return comp;
+}
+
+class twosat {
+ public:
+    int n;
+    vector<vector<int>> g;
+
+    twosat(int n) : n(n) {
+        g.resize(2 * n);
+    }
+
+    void add(int x, int typex, int y, int typey) {
+        g[x * 2 + (typex ^ 1)].push_back(y * 2 + typey);
+        g[y * 2 + (typey ^ 1)].push_back(x * 2 + typex);
+    }
+
+    vector<int> solve() {
+        vector<int> comp = find_kss(g);
+        vector<int> res(n);
+        for (int i = 0; i < n; i++) {
+            if (comp[i * 2] == comp[i * 2 + 1]) {
+                return {};
+            }
+            res[i] = (comp[i * 2] < comp[i * 2 + 1]);
+        }
+        return res;
+    }
+}; // 1 - x, 0 - !x

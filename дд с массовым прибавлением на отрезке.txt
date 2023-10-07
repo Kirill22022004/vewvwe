@@ -1,0 +1,80 @@
+struct node {
+    int x = 0, y = 0, c = 0, d = 0;
+    node* l;
+    node* r;
+    node() {}
+    node(int x) : x(x), y((rand() << 16) + rand()), c(1), d(0), l(nullptr), r(nullptr) {}
+};
+
+typedef node* pnode;
+
+void update(pnode t) {
+    t->c = 1;
+    if (t->l) t->c += t->l->c;
+    if (t->r) t->c += t->r->c;
+}
+
+void push(pnode t) {
+    t->x += t->d;
+    if (t->l) t->l->d += t->d;
+    if (t->r) t->r->d += t->d;
+    t->d = 0;
+}
+
+void print(pnode t) {
+    if (!t) return;
+    push(t);
+    print(t->l, 0);
+    if (t->x) cout << t->x << " ";
+    print(t->r, 0);
+}
+
+pair<pnode, pnode> split(pnode t, int x) {
+    if (!t) return {nullptr, nullptr};
+    push(t);
+    if (t->x <= x) {
+        auto res = split(t->r, x);
+        t->r = res.fi;
+        update(t);
+        return {t, res.se};
+    } else {
+        auto res = split(t->l, x);
+        t->l = res.se;
+        update(t);
+        return {res.fi, t};
+    }
+}
+
+pair<pnode, pnode> split2(pnode t, int x) {
+    if (!t) return {nullptr, nullptr};
+    push(t);
+    int sz = 1;
+    if (t->l) sz += t->l->c;
+    if (sz <= x) {
+        auto res = split2(t->r, x - sz);
+        t->r = res.fi;
+        update(t);
+        return {t, res.se};
+    } else {
+        auto res = split2(t->l, x);
+        t->l = res.se;
+        update(t);
+        return {res.fi, t};
+    }
+}
+
+pnode merge(pnode a, pnode b) {
+    if (!a) return b;
+    if (!b) return a;
+    push(a);
+    push(b);
+    if (a->y < b->y) {
+        a->r = merge(a->r, b);
+        update(a);
+        return a;
+    } else {
+        b->l = merge(a, b->l);
+        update(b);
+        return b;
+    }
+}

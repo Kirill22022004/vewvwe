@@ -1,0 +1,38 @@
+class dsu {
+public:
+    vector<int> p;
+    vector<vector<int>> vertex;
+    int n;
+    dsu(int n) : n(n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        vertex.resize(n);
+        for (int i = 0; i < n; i++) {
+            vertex[i].push_back(i);
+        }
+    }
+    void clear() {
+        iota(p.begin(), p.end(), 0);
+        for (int i = 0; i < n; i++) {
+            vertex[i].clear();
+            vertex[i].push_back(i);
+        }
+    }
+    int get(int x) {
+        return (x == p[x] ? x : (p[x] = get(p[x])));
+    }
+    bool unite(int x, int y) {
+        x = get(x);
+        y = get(y);
+        if (x == y) {
+            return false;
+        }
+        if (vertex[x].size() < vertex[y].size()) swap(x, y);
+        p[y] = x;
+        while (vertex[y].size() > 0) {
+            vertex[x].push_back(vertex[y].back());
+            vertex[y].pop_back();
+        }
+        return true;
+    }
+};

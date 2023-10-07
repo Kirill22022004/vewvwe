@@ -1,0 +1,50 @@
+struct node{
+    int next[26], suf, pr, dp;
+    // next - переходы по символам (-1 если нет)
+    // suf - суффкисная ссылка
+    // pr - предок в автомате с наибольшей длиной наибольшей строки
+    // dp - длина наибольшей строки в вершине
+    node() {
+        for (int i = 0; i < 26; i++) next[i] = -1;
+        suf = pr = -1;
+        dp = 0;
+    };
+};
+
+int last = 0; // текущая последняя вершина (возвращать в 0 для каждой новой строки)
+
+vector<node> a; // массив хранящий суфдерево
+// !!!!!!!! изначально положить пустую вершину - корень
+
+int add(int x, char c) {
+    int ch = c - 'a';
+    int b = a.size(); // новая вершина - корень
+    a.push_back(node());
+    a[b].dp = a[x].dp + 1;
+    a[b].pr = x;
+    a[b].suf = 0;
+    for (; x != -1; x = a[x].suf) { // спуск по суффиксным ссылкам
+        if (a[x].next[ch] == -1) {
+            a[x].next[ch] = b; // проведение нужного ребра
+            continue;
+        }
+        int c = a[x].next[ch];
+        if (x == a[c].pr) { // простой случай когда не нужно раздваивать вершину
+            a[b].suf = c;
+            break;
+        }
+        int d = a.size(); // копия вершины с
+        a.push_back(node());
+        a[d].suf = a[c].suf;
+        a[c].suf = d;
+        a[b].suf = d;
+        a[d].pr = x;
+        a[d].dp = a[x].dp + 1;
+        for (int i = 0; i < 26; i++) a[d].next[i] = a[c].next[i];
+        for (; x != -1 && a[x].next[ch] == c; x = a[x].suf) {
+            a[x].next[ch] = d;
+        }
+        break;
+    }
+    return a[a[b].pr].next[ch]; // возвращение нового корня
+}

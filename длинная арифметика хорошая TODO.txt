@@ -1,0 +1,211 @@
+const int BASE = 1000000000, BASE_DIGITS = 9;
+
+struct BigInt{
+    int sign;
+    vector<long long> a;
+    //________________________CONSTRUCT____________________________
+    BigInt() : sign(1) {}
+    BigInt& operator = (long long x) {
+        sign = 1;
+        if (x < 0) {
+            sign = -1;
+            x *= -1;
+        }
+        a.clear();
+        for (; x > 0; x = x / BASE) {
+            a.push_back(x % BASE);
+        }
+        return *this;
+    }
+    BigInt(long long x) {
+        *this = x;
+    }
+    BigInt(const BigInt& b) {
+        sign = b.sign;
+        a = b.a;
+    }
+    //________________________OPERATOR COPY AND SWAP____________________________
+    friend void swap(BigInt& a, BigInt& b) {
+        std::swap(a.sign, b.sign);
+        std::swap(a.a, b.a);
+    }
+    BigInt& operator = (BigInt b) {
+        swap(*this, b);
+        return *this;
+    }
+    BigInt(BigInt&& b) : BigInt() {
+        swap(*this, b);
+    }
+    //________________________INPUT AND OUTPUT AND NORMALIZE___________________________
+    void read(const string& s) {
+        sign = 1;
+        a.clear();
+        int pos = 0;
+        if (s.size() > 0 && (s[0] == '-' || s[0] == '+')) {
+            pos = 1;
+            if (s[0] == '-') sign = -1;
+        }
+        for (int i = (int) s.size() - 1; i >= pos; i -= BASE_DIGITS) {
+            long long x = 0;
+            for (int j = max(pos, i - BASE_DIGITS + 1); j <= i; j++) {
+                x = x * 10 + (s[j] - '0');
+            }
+            a.push_back(x);
+        }
+        trim();
+    }
+    BigInt(const string& s) {
+        read(s);
+    }
+    friend istream& operator>>(istream &stream, BigInt& x) {
+        string s;
+        stream >> s;
+        x.read(s);
+        return stream;
+    }
+    friend ostream& operator<<(ostream &stream, const BigInt& x) {
+        if (x.sign == -1 && !x.isZero()) {
+            stream << '-';
+        }
+        stream << (x.a.empty() ? 0 : x.a.back());
+        for (int i = (int) x.a.size() - 2; i >= 0; i--) {
+            stream << setw(BASE_DIGITS) << setfill('0') << x.a[i];
+        }
+        return stream;
+    }
+    void trim() {
+        while (!a.empty() && a.back() == 0) a.pop_back();
+        if (a.empty()) sign = 1;
+    }
+    bool isZero() const {
+        return a.empty() || (a.size() == 1 && a[0] == 0);
+    }
+    BigInt abs() const {
+        BigInt res = *this;
+        res.sign *= res.sign;
+        return res;
+    }
+    //________________________COMPARE____________________________
+    bool operator < (const BigInt& x) const {
+        if (sign != x.sign) return sign < x.sign;
+        if (a.size() != x.a.size())
+            return a.size() * sign < x.a.size() * x.sign;
+        for (int i = (int) a.size() - 1; i >= 0; i--) {
+            if (a[i] != x.a[i]) return a[i] * sign < x.a[i] * sign;
+        }
+        return false;
+    }
+    bool operator > (const BigInt& x) const {
+        return x < *this;
+    }
+    bool operator <= (const BigInt& x) const {
+        return !(x < *this);
+    }
+    bool operator >= (const BigInt& x) const {
+        return !(*this < x);
+    }
+    bool operator == (const BigInt& x) const {
+        return (!(x < *this)) && (!(*this < x));
+    }
+    bool operator != (const BigInt& x) const {
+        return (x < *this) || (*this < x);
+    }
+    // -1 <    0 =    1 >
+    friend int __compare_abs(const BigInt& x, const BigInt& y) {
+        if (x.a.size() != y.a.size()) return x.a.size() < y.a.size() ? -1 : 1;
+        for (int i = (int) x.a.size() - 1; i >= 0; i--) {
+            if (x.a[i] != y.a[i]) return x.a[i] < y.a[i] ? -1 : 1;
+        }
+        return 0;
+    }
+    //________________________+++++-----____________________________
+    BigInt operator-() const {
+        BigInt res = *this;
+        if (isZero()) return res;
+        res.sign = -sign;
+        return res;
+    }
+    void __internal_add(const BigInt& x) {
+        if (a.size() < x.a.size()) {
+            a.resize(x.a.size(), 0);
+        }
+        for (long long i = 0, tmp = 0; i < (int) max(a.size(), x.a.size()) || tmp; ++i) {
+            if (i == (int) a.size()) a.push_back(0);
+            a[i] += tmp + (i < (int) x.a.size() ? x.a[i] : 0);
+            tmp = a[i] >= BASE;
+            if (tmp) a[i] -= BASE;
+        }
+    }
+    void __internal_sub(const BigInt& x) {
+        for (long long i = 0, tmp = 0; i < (int) x.a.size() || tmp; i++) {
+            a[i] -= tmp + (i < (int) x.a.size() ? x.a[i] : 0);
+            tmp = a[i] < 0;
+            if (tmp) a[i] += BASE;
+        }
+        this->trim();
+    }
+    BigInt operator += (const BigInt& x) {
+        if (sign == x.sign) {
+            __internal_add(x);
+        }
+        else {
+            if (__compare_abs(*this, x) >= 0) {
+                __internal_sub(x);
+            } else {
+                BigInt xx = x;
+                swap(*this, xx);
+                __internal_sub(xx);
+            }
+        }
+        return *this;
+    }
+    BigInt operator -= (const BigInt& x) {
+        if (sign == x.sign) {
+            if (__compare_abs(*this, x) >= 0) {
+                __internal_sub(x);
+            }
+            else {
+                BigInt xx = x;
+                swap(*this, xx);
+                __internal_sub(xx);
+                this->sign = -this->sign;
+            }
+        }
+        else {
+            __internal_add(x);
+        }
+        return *this;
+    }
+    template< typename L, typename R >
+        typename std::enable_if<
+            std::is_convertible<L, BigInt>::value &&
+            std::is_convertible<R, BigInt>::value &&
+            std::is_lvalue_reference<R&&>::value,
+            BigInt>::type friend operator + (L&& l, R&& r) {
+        BigInt result(std::forward<L>(l));
+        result += r;
+        return result;
+    }
+    template< typename L, typename R >
+        typename std::enable_if<
+            std::is_convertible<L, BigInt>::value &&
+            std::is_convertible<R, BigInt>::value &&
+            std::is_rvalue_reference<R&&>::value,
+            BigInt>::type friend operator + (L&& l, R&& r) {
+        BigInt result(std::move(r));
+        result += l;
+        return result;
+    }
+
+    template< typename L, typename R >
+        typename std::enable_if<
+            std::is_convertible<L, BigInt>::value &&
+            std::is_convertible<R, BigInt>::value,
+            BigInt>::type friend operator - (L&& l, R&& r) {
+        BigInt result(std::forward<L>(l));
+        result -= r;
+        return result;
+    }
+    //________________________* ANS / AND %____________________________
+
+};

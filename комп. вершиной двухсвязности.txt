@@ -1,0 +1,51 @@
+vector<int> biconv(vector<vector<int>>& g, vector<pii>& edge) {
+    int n = g.size();
+    vector<int> parent(n, -1), depth(n), min_depth(n), used(n, false), ts;
+    function<void(int, int, int)> dfs = [&] (int v, int pr, int d) {
+        depth[v] = d;
+        min_depth[v] = d;
+        used[v] = true;
+        ts.push_back(v);
+        parent[v] = pr;
+        bool f = false;
+        for (auto x : g[v]) {
+            if (x == pr) {
+                if (!f) {
+                    f = true;
+                    continue;
+                }
+            }
+            if (used[x]) {
+                min_depth[v] = min(min_depth[v], depth[x]);
+            } else {
+                dfs(x, v, d + 1);
+                min_depth[v] = min(min_depth[v], min_depth[x]);
+            }
+        }
+    };
+    for (int i = 0; i < n; i++) {
+        if (!used[i]) {
+            dfs(i, -1, 0);
+        }
+    }
+    vector<int> comp(n, -1);
+    int cnt = 0;
+    for (auto i : ts) {
+        if (parent[i] == -1) {
+            continue;
+        }
+        if (min_depth[i] >= depth[parent[i]]) {
+            comp[i] = cnt++;
+        } else {
+            comp[i] = comp[parent[i]];
+        }
+    }
+    int m = edge.size();
+    vector<int> edge_comp(m, -1);
+    for (int i = 0; i < m; i++) {
+        int x = edge[i].first, y = edge[i].second;
+        int z = (depth[x] > depth[y] ? x : y);
+        edge_comp[i] = comp[z];
+    }
+    return edge_comp;
+}

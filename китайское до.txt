@@ -1,0 +1,104 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define fi first
+#define se second
+#define pii pair<int, int>
+
+long long s[400000];
+int d[400000], t2[400000];
+pii t[400000];
+
+void build(int v, int l, int r) {
+    t[v] = {0, r - l};
+    s[v] = 0;
+    t2[v] = 1e9 + 1;
+    d[v] = -1;
+    if (l + 1 != r) {
+        int m = (l + r) / 2;
+        build(v * 2 + 1, l, m);
+        build(v * 2 + 2, m, r);
+    }
+}
+
+void push(int v, int l, int r) {
+    if (d[v] == -1) return;
+    s[v] += (long long) d[v] * (long long) t[v].se - (long long) t[v].fi * (long long) t[v].se;
+    t[v].fi = d[v];
+    if (l + 1 != r) {
+        int m = (l + r) / 2;
+        if (t[v * 2 + 1].fi < d[v]) d[v * 2 + 1] = d[v];
+        if (t[v * 2 + 2].fi < d[v]) d[v * 2 + 2] = d[v];
+    }
+    d[v] = -1;
+}
+
+void update(int v, int l, int r, int l1, int r1, int x) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1 || t[v].fi >= x) return;
+    if (l1 <= l && r <= r1 && t2[v] > x) {
+        d[v] = x;
+        push(v, l, r);
+        return;
+    }
+    int m = (l + r) / 2;
+    update(v * 2 + 1, l, m, l1, r1, x);
+    update(v * 2 + 2, m, r, l1, r1, x);
+    s[v] = s[v * 2 + 1] + s[v * 2 + 2];
+    if (t[v * 2 + 1].fi == t[v * 2 + 2].fi) {
+        t[v] = {t[v * 2 + 1].fi, t[v * 2 + 1].se + t[v * 2 + 2].se};
+        t2[v] = min(t2[v * 2 + 1], t2[v * 2 + 2]);
+    } else {
+        if (t[v * 2 + 1].fi < t[v * 2 + 2].fi) {
+            t[v] = t[v * 2 + 1];
+            t2[v] = min(t[v * 2 + 2].fi, t2[v * 2 + 1]);
+        } else {
+            t[v] = t[v * 2 + 2];
+            t2[v] = min(t[v * 2 + 1].fi, t2[v * 2 + 2]);
+        }
+    }
+}
+
+long long get(int v, int l, int r, int l1, int r1) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) return 0;
+    if (l1 <= l && r <= r1) return s[v];
+    int m = (l + r) / 2;
+    return get(v * 2 + 1, l, m, l1, r1) + get(v * 2 + 2, m, r, l1, r1);
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, k;
+    while (cin >> n >> k) {
+        if (n == 0) return 0;
+        build(0, 0, n);
+        while (k--) {
+            char c;
+            cin >> c;
+            if (c == '?') {
+                int l, r;
+                cin >> l >> r;
+                l--, r--;
+                long long res = get(0, 0, n, l, r + 1);
+                long long c = r - l + 1;
+                long long g = __gcd(c, res);
+                res /= g;
+                c /= g;
+                if (c == 1) {
+                    cout << res << '\n';
+                } else {
+                    cout << res << "/" << c << '\n';
+                }
+            } else {
+                int l, r, x;
+                cin >> l >> r >> x;
+                l--, r--;
+                update(0, 0, n, l, r + 1, x);
+            }
+        }
+    }
+}

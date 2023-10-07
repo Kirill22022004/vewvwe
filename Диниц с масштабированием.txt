@@ -1,0 +1,108 @@
+template <class T> class flow_graph {
+ public:
+    struct edge {
+        int to;
+        T c;
+        T f;
+        int rev;
+        T tmp;
+    };
+    vector<vector<edge>> g;
+    vector<int> ptr;
+    vector<int> d;
+    int n;
+    int st, fin;
+    T flow;
+    flow_graph(int n, int st, int fin) : n(n), st(st), fin(fin) {
+        assert(0 <= st && st < n && 0 <= fin && fin < n && st != fin);
+        g.resize(n);
+        ptr.resize(n);
+        d.resize(n);
+    }
+    void clear() {
+        for (int i = 0; i < n; i++) {
+            for (edge& e : g[i]) {
+                e.f = 0;
+            }
+        }
+    }
+    void add(int from, int to, T forward_cap, T backward_cap) {
+        assert(0 <= from && from < n && 0 <= to && to < n);
+        int from_size = g[from].size();
+        int to_size = g[to].size();
+        g[from].push_back({to, forward_cap, 0, to_size});
+        g[to].push_back({from, backward_cap, 0, from_size});
+    }
+    bool bfs() {
+        queue<int> q({st});
+        fill(d.begin(), d.end(), -1);
+        d[st] = 0;
+        while (!q.empty()) {
+            int i = q.front();
+            q.pop();
+            for (edge& e : g[i]) {
+                if (e.tmp > e.f && d[e.to] == -1) {
+                    d[e.to] = d[i] + 1;
+                    q.push(e.to);
+                }
+            }
+        }
+        return (d[fin] != -1);
+    }
+    T dfs(int v, T w) {
+        if (v == fin || (w <= 0 && w != -1)) {
+            return w;
+        }
+        for (int u = ptr[v]; u < (int) g[v].size(); u++) {
+            int x = g[v][u].to;
+            if (d[v] + 1 == d[x] && g[v][u].tmp > g[v][u].f) {
+                T ww = g[v][u].tmp - g[v][u].f;
+                if (v != st) ww = min(ww, w);
+                T res = dfs(x, ww);
+                if (res > 0) {
+                    g[v][u].f += res;
+                    g[x][g[v][u].rev].f -= res;
+                    return res;
+                }
+            }
+            ptr[v]++;
+        }
+        return 0;
+    }
+    T max_flow2() {
+        T ans = 0;
+        while (bfs()) {
+            fill(ptr.begin(), ptr.end(), 0);
+            T res = dfs(st, -1);
+            while (res != 0) {
+                ans += res;
+                res = dfs(st, -1);
+            }
+        }
+        return ans;
+    }
+    T max_flow() {
+        flow = 0;
+        for (int i = 0; i < n; i++) {
+            for (int k = 0; k < (int) g[i].size(); k++) g[i][k].tmp = 0;
+        }
+        for (int j = 30; j >= 0; j--) {
+            for (int i = 0; i < n; i++) {
+                for (int k = 0; k < (int) g[i].size(); k++) {
+                    if (g[i][k].c & (1ll << j)) g[i][k].tmp += (1ll << j);
+                }
+            }
+            for (int i = 0; i < n; i++) ptr[i] = g[i].size();
+            flow += max_flow2();
+        }
+        return flow;
+    }
+    vector<bool> min_cut() {
+        max_flow();
+        vector<bool> ret(n);
+        for (int i = 0; i < n; i++) {
+            ret[i] = (d[i] != -1);
+        }
+        return ret;
+    }
+};

@@ -1,0 +1,105 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+//#define int __int128_t
+
+mt19937 gen(time(0));
+
+int mul(int a, int b, int m) {
+    a %= m;
+    b %= m;
+    int res = (int) 0;
+    while (b > (int) 0) {
+        if (b % (int) 2 == (int) 1) {
+            res = (res + a) % m;
+            b--;
+        }
+        a = (a * (int) 2) % m;
+        b = b >> 1;
+    }
+    return res;
+}
+
+int gcd(int a, int b) {
+    if (b == (int) 0) return a;
+    return gcd(b, a % b);
+}
+
+int abs(int x) {
+    if (x >= (int) 0) return x;
+    return -x;
+}
+
+int binpow(int x, int n, int MOD) {
+    if (n == 0) return (int) 1 % MOD;
+    int res = (int) 1;
+    if (n % (int) 2 == (int) 1) res *= x;
+    return mul(binpow(mul(x, x, MOD), n >> 1, MOD), res, MOD);
+}
+
+bool f(int n) {
+    if (n == 1) {
+        return false;
+    }
+    for (int i = 0; i < (int) 100; i++) {
+        int a = rand() % (n - 1) + (int) 1;
+        for (int p = n - 1; p > 0; p /= (int) 2) {
+            int res = binpow(a, p, n);
+            if (res != (int) 1) {
+                if (res == n - 1) {
+                    break;
+                } else {
+                    return false;
+                }
+            }
+            if (p % (int) 2 != (int) 0) break;
+        }
+    }
+    return true;
+}
+
+int PO(int n, int st) {
+    int x = st, y = st, tmp = 1;
+    long long k = 0;
+    while (k < 31000ll && (tmp == 1ll || tmp == n)) {
+        y = mul((y + 1ll) % n, (y + 1ll) % n, n);
+        x = mul((x + 1ll) % n, (x + 1ll) % n, n);
+        x = mul((x + 1ll) % n, (x + 1ll) % n, n);
+        tmp = gcd(abs(x - y), n);
+        k++;
+    }
+    return tmp;
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    unsigned long long N;
+    cin >> N;
+    int n = N;
+    vector<int> p;
+    for (int i = (int) 2; i <= (int) 30000000; i++) {
+        while (n % i == 0) {
+            p.push_back(i);
+            n /= i;
+        }
+    }
+    if (n > (int) 1) {
+        if (f(n)) {
+            p.push_back(n);
+        } else {
+            for (int j = (int) 1; j <= (int) 100; j++) {
+                int k = PO(n, gen() % n);
+                if (k != (int) 1 && k != n) {
+                    p.push_back(k);
+                    p.push_back(n / k);
+                    break;
+                }
+            }
+        }
+    }
+    cout << p.size() << endl;
+    for (auto x : p) cout << (unsigned long long) x << " ";
+}

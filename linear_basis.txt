@@ -1,0 +1,122 @@
+int mod;
+
+namespace modular_vector {
+    inline int add(int x, int y) {
+        x += y;
+        if (x >= mod) {
+            x -= mod;
+        }
+        return x;
+    }
+
+    inline int sub(int x, int y) {
+        x -= y;
+        if (x < 0) {
+            x += mod;
+        }
+        return x;
+    }
+
+    inline int mul(int x, int y) {
+        if (x < 0) {
+            x += mod;
+        }
+        if (y < 0) {
+            y += mod;
+        }
+        return x * 1ll * y % mod;
+    }
+
+    vector<int> operator+(const vector<int>& a, const vector<int>& b) {
+        assert(a.size() == b.size());
+        vector<int> res(a.size());
+        for (int i = 0; i < (int) a.size(); i++) {
+            res[i] = add(a[i], b[i]);
+        }
+        return res;
+    }
+
+    vector<int> operator-(const vector<int>& a, const vector<int>& b) {
+        assert(a.size() == b.size());
+        vector<int> res(a.size());
+        for (int i = 0; i < (int) a.size(); i++) {
+            res[i] = sub(a[i], b[i]);
+        }
+        return res;
+    }
+
+    vector<int> operator*(const vector<int>& a, int x) {
+        vector<int> res(a.size());
+        for (int i = 0; i < (int) a.size(); i++) {
+            res[i] = mul(a[i], x);
+        }
+        return res;
+    }
+}
+using namespace modular_vector;
+
+int gcd(int a, int b, int &x, int &y) {
+    if (a == 0) {
+        x = 0, y = 1;
+        return b;
+    }
+    int x1, y1;
+    int g = gcd(b % a, a, x1, y1);
+    x = y1 - (b / a) * x1;
+    y = x1;
+    return g;
+}
+
+struct linear_basis {
+    int n;
+    vector<vector<int>> a;
+
+    linear_basis(int n) : n(n), a(n, vector<int>(n)) {}
+
+    void insert(vector<int> v) {
+        for (int i = 0; i < n; i++) {
+            if (v[i]) {
+                int z = (a[i][i] ? a[i][i] : mod);
+                int x, y;
+                int g = gcd(v[i], z, x, y);п
+                int dx = z / g, dy = v[i] / g;
+                for (int j = 0; j < n; j++) {
+                    tie(a[i][j], v[j]) = make_pair(add(mul(v[j], x), mul(a[i][j], y)),
+                                                   sub(mul(v[j], dx), mul(a[i][j], dy)));
+                }
+            }
+        }
+    }
+
+    bool check(vector<int> v) {
+        for (int i = 0; i < n; i++) {
+            if (v[i]) {
+                if (a[i][i] == 0 || v[i] % a[i][i]) {
+                    return false;
+                }
+                v = v - a[i] * (v[i] / a[i][i]);
+            }
+        }
+        return true;
+    }
+
+    vector<int> getmax() {
+        vector<int> res(n);
+        for (int i = 0; i < n; i++) {
+            if (a[i][i] > 0) {
+                res = res + a[i] * ((mod - 1 - res[i]) / a[i][i]);
+            }
+        }
+        return res;
+    }
+
+    int count(const int md = 998244353) {
+        int res = 1;
+        for (int i = 0; i < n; i++) {
+            if (a[i][i] > 0) {
+                res = (res * 1ll * mod / a[i][i]) % md;
+            }
+        }
+        return res;
+    }
+};

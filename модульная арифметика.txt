@@ -1,0 +1,44 @@
+const int mod = 1e9 + 7;
+
+int inv(int x);
+int sum(int x, int y) { return (x + y) % mod; }
+int raz(int x, int y) { return (x - y + mod) % mod; }
+int mul(int x, int y) { return (x * 1ll * y) % mod; }
+int del(int x, int y) { return (x * 1ll * inv(y)) % mod; }
+
+int binpow(int a, int n) {
+    int res = 1;
+    while (n) {
+        if (n % 2 == 1) res = mul(res, a);
+        n >>= 1;
+        a = mul(a, a);
+    }
+    return res;
+}
+
+int inv(int x) { return binpow(x, mod - 2); }
+
+vector<int> fact(1, 1);
+vector<int> inv_fact(1, 1);
+
+void fast(int n) {
+    while ((int) fact.size() < n + 1) {
+        fact.push_back(mul(fact.back(), (int) fact.size()));
+    }
+    inv_fact.resize(n + 1, 1);
+    inv_fact[n] = del(1, fact[n]);
+    for (int i = n - 1; i >= 2; i--) {
+        inv_fact[i] = mul(inv_fact[i + 1], (i + 1));
+    }
+}
+
+int C(int n, int k) {
+    if (k < 0 || k > n) {
+        return 0;
+    }
+    while ((int) fact.size() < n + 1) {
+        fact.push_back(mul(fact.back(), (int) fact.size()));
+        inv_fact.push_back(inv(fact.back()));
+    }
+    return mul(mul(fact[n], inv_fact[k]), inv_fact[n - k]);
+}

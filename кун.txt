@@ -1,0 +1,34 @@
+bool dfs(int v, vector<vector<int>>& g, vector<int>& l, vector<int>& used, int T) {
+    if (used[v] == T) {
+        return false;
+    }
+    used[v] = T;
+    for (auto x : g[v]) {
+        if (l[x] == -1) {
+            l[x] = v;
+            return true;
+        }
+    }
+    for (auto x : g[v]) {
+        if (dfs(l[x], g, l, used, T)) {
+            l[x] = v;
+            return true;
+        }
+    }
+    return false;
+}
+
+vector<pair<int, int>> kun(int n, int m, vector<vector<int>> g) {
+    vector<pair<int, int>> ans;
+    int T = 1;
+    vector<int> used(n, 0), l(m, -1);
+    for (int i = 0; i < n; i++) {
+        if (dfs(i, g, l, used, T)) T++;
+    }
+    for (int i = 0; i < m; i++) {
+        if (l[i] != -1) {
+            ans.push_back({l[i], i});
+        }
+    }
+    return ans;
+}

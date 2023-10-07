@@ -1,0 +1,133 @@
+#include "bits/stdc++.h"
+
+using namespace std;
+
+struct dsu_bipartite_with_rollback {
+    vector<int> p, d, sz, state;
+    vector<array<int, 3>> changes;
+    int bipartite = true;
+
+    void build(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        d.resize(n);
+        sz.resize(n, 1);
+    }
+
+    dsu_bipartite_with_rollback(int n = 0) {
+        build(n);
+    }
+
+    pair<int, int> get(int v) {
+        if (v == p[v]) {
+            return {v, d[v]};
+        }
+        auto res = get(p[v]);
+        res.second ^= d[v];
+        return res;
+    }
+
+    void merge(int v, int u, int x) {
+        auto res = get(v);
+        auto res2 = get(u);
+        if (res.first == res2.first) {
+            if ((res.second ^ x ^ 1) == res2.second) {
+                changes.push_back({0, bipartite, 1});
+                bipartite = 0;
+            }
+            return;
+        }
+        if (sz[res.first] > sz[res2.first]) {
+            swap(res, res2);
+        }
+        p[res.first] = res2.first;
+        sz[res2.first] += sz[res.first];
+        changes.push_back({res.first, 0, 0});
+        if ((res.second ^ x ^ 1) == res2.second) {
+            d[res.first] ^= 1;
+            changes.back()[1] = 1;
+        }
+    }
+
+    void save() {
+        state.push_back((int) changes.size());
+    }
+
+    void rollback() {
+        int k = state.back();
+        state.pop_back();
+        while ((int) changes.size() > k) {
+            auto [v, delta, res] = changes.back();
+            changes.pop_back();
+            if (!res) {
+                sz[p[v]] -= sz[v];
+                p[v] = v;
+                d[v] ^= delta;
+            } else {
+                bipartite = delta;
+            }
+        }
+    }
+};
+
+vector<vector<pair<int, int>>> t;
+
+void update(int v, int l, int r, int l1, int r1, pair<int, int> edge) {
+    if (l1 >= r || l >= r1) {
+        return;
+    }
+    if (l1 <= l && r <= r1) {
+        t[v].push_back(edge);
+        return;
+    }
+    int m = (l + r) / 2;
+    update(v * 2 + 1, l, m, l1, r1, edge);
+    update(v * 2 + 2, m, r, l1, r1, edge);
+}
+
+dsu_bipartite_with_rollback dsu;
+
+void dfs(int v, int l, int r) {
+    dsu.save();
+    for (auto [x, y] : t[v]) {
+        dsu.merge(x, y, 1);
+    }
+    if (l + 1 == r) {
+        cout << (dsu.bipartite ? "YES\n" : "NO\n");
+        dsu.rollback();
+        return;
+    }
+    int m = (l + r) / 2;
+    dfs(v * 2 + 1, l, m);
+    dfs(v * 2 + 2, m, r);
+    dsu.rollback();
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, q;
+    cin >> n >> q;
+    t.resize(4 * q);
+    dsu.build(n);
+    map<pair<int, int>, int> a;
+    for (int i = 0; i < q; i++) {
+        int x, y;
+        cin >> x >> y;
+        x--, y--;
+        if (x > y) {
+            swap(x, y);
+        }
+        if (a.find({x, y}) != a.end()) {
+            update(0, 0, q, a[{x, y}], i, {x, y});
+            a.erase({x, y});
+        } else {
+            a[{x, y}] = i;
+        }
+    }
+    for (auto [edge, t] : a) {
+        update(0, 0, q, t, q, edge);
+    }
+    dfs(0, 0, q);
+}

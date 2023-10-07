@@ -1,0 +1,17 @@
+long long union_segments(vector<pair<long long, long long>> a) {
+    sort(a.begin(), a.end());
+    long long ans = 0;
+    long long l = a[0].first - 1;
+    for (int i = 0; i < a.size(); i++) {
+        long long x = a[i].first, y = a[i].second;
+        if (x > l) {
+            ans += y - x + 1;
+            l = y;
+        }
+        else {
+            ans += max(0ll, y - l);
+            l = max(l, y);
+        }
+    }
+    return ans;
+}

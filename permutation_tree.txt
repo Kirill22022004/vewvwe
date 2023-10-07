@@ -1,0 +1,193 @@
+struct segtree {
+    int n;
+    vector<int> t, d;
+
+    void build(int sz) {
+        n = sz;
+        t.resize(4 * n);
+        d.resize(4 * n);
+    }
+
+    void push(int v, int l, int r) {
+        t[v] += d[v];
+        if (l + 1 != r) {
+            d[v * 2 + 1] += d[v];
+            d[v * 2 + 2] += d[v];
+        }
+        d[v] = 0;
+    }
+
+    void update(int v, int l, int r, int l1, int r1, int x) {
+        push(v, l, r);
+        if (l1 >= r || l >= r1) {
+            return;
+        }
+        if (l1 <= l && r <= r1) {
+            d[v] = x;
+            push(v, l, r);
+            return;
+        }
+        int m = (l + r) / 2;
+        update(v * 2 + 1, l, m, l1, r1, x);
+        update(v * 2 + 2, m, r, l1, r1, x);
+        t[v] = min(t[v * 2 + 1], t[v * 2 + 2]);
+    }
+
+    void update(int l, int r, int x) { // segment
+        update(0, 0, n, l, r + 1, x);
+    }
+
+    int get(int v, int l, int r, int l1, int r1) {
+        push(v, l, r);
+        if (t[v] || l >= r1 || l1 >= r) {
+            return -1;
+        }
+        if (l + 1 == r) {
+            return l;
+        }
+        int m = (l + r) / 2;
+        int res = get(v * 2 + 1, l, m, l1, r1);
+        if (res != -1) {
+            return res;
+        }
+        return get(v * 2 + 2, m, r, l1, r1);
+    }
+
+    int get(int pos) {
+        return get(0, 0, n, 0, pos + 1);
+    }
+};
+
+struct permutation_tree {
+    int n, cnt = 0, root;
+    vector<int> left, right, mid, type;
+    vector<vector<int>> g;
+    vector<int> p, lg, t, d, st;
+    vector<pair<int, int>> tmx, tmn;
+    vector<vector<int>> mx, mn;
+    segtree tree;
+
+    inline int getmax(int l, int r) {
+        int g = lg[r - l + 1];
+        return max(mx[g][l], mx[g][r - (1 << g) + 1]);
+    }
+
+    inline int getmin(int l, int r) {
+        int g = lg[r - l + 1];
+        return min(mn[g][l], mn[g][r - (1 << g) + 1]);
+    }
+
+    bool good(int l, int r) {
+        return getmax(l, r) - getmin(l, r) == r - l;
+    }
+
+    void build() {
+        lg.resize(n + 1);
+        for (int i = 2; i <= n; i++) {
+            lg[i] = lg[i / 2] + 1;
+        }
+        mx.resize(lg[n] + 1, vector<int> (n));
+        mn.resize(lg[n] + 1, vector<int> (n));
+        mx[0] = mn[0] = p;
+        for (int j = 1; j <= lg[n]; j++) {
+            for (int i = 0; i + (1 << j) - 1 < n; i++) {
+                mx[j][i] = max(mx[j - 1][i], mx[j - 1][i + (1 << (j - 1))]);
+                mn[j][i] = min(mn[j - 1][i], mn[j - 1][i + (1 << (j - 1))]);
+            }
+        }
+        tree.build(n);
+        left.resize(2 * n);
+        right.resize(2 * n);
+        mid.resize(2 * n);
+        type.resize(2 * n);
+        g.resize(2 * n);
+        for (int i = 0; i < n; i++) {
+            {
+                int l = i;
+                while ((int) tmx.size() && p[tmx.back().second] <= p[i]) {
+                    tree.update(tmx.back().first, tmx.back().second, -p[tmx.back().second]);
+                    l = tmx.back().first;
+                    tmx.pop_back();
+                }
+                tmx.push_back({l, i});
+                tree.update(tmx.back().first, tmx.back().second, p[tmx.back().second]);
+            }
+            {
+                int l = i;
+                while ((int) tmn.size() && p[tmn.back().second] >= p[i]) {
+                    tree.update(tmn.back().first, tmn.back().second, p[tmn.back().second]);
+                    l = tmn.back().first;
+                    tmn.pop_back();
+                }
+                tmn.push_back({l, i});
+                tree.update(tmn.back().first, tmn.back().second, -p[tmn.back().second]);
+            }
+            int v = cnt++;
+            left[v] = right[v] = i;
+            mid[v] = -1;
+            type[v] = 0;
+            int pos = tree.get(i);
+            if (pos != -1) {
+                while ((int) st.size() && left[st.back()] >= pos) {
+                    int u = st.back();
+                    if (type[u] == 1 && good(mid[u], i)) {
+                        right[u] = i;
+                        g[u].push_back(v);
+                        v = u;
+                        st.pop_back();
+                    } else if (good(left[u], i)) {
+                        int k = cnt++;
+                        left[k] = left[u];
+                        right[k] = i;
+                        mid[k] = left[v];
+                        type[k] = 1;
+                        g[k] = {u, v};
+                        v = k;
+                        st.pop_back();
+                    } else {
+                        int k = cnt++;
+                        left[k] = left[v];
+                        right[k] = i;
+                        mid[k] = -1;
+                        type[k] = 0;
+                        g[k] = {v};
+                        while (1) {
+                            u = st.back();
+                            left[k] = left[u];
+                            g[k].push_back(u);
+                            st.pop_back();
+                            if (good(left[k], right[k])) {
+                                break;
+                            }
+                        }
+                        reverse(g[k].begin(), g[k].end());
+                        v = k;
+                    }
+                }
+            }
+            st.push_back(v);
+            tree.update(0, i, -1);
+        }
+        assert((int) st.size() == 1);
+        root = st[0];
+    }
+
+    permutation_tree() {}
+
+    permutation_tree(vector<int> a) {
+        n = (int) a.size();
+        p = a;
+        build();
+    }
+
+    long long getcnt() {
+        long long ans = cnt;
+        for (int i = 0; i < cnt; i++) {
+            if (type[i]) {
+                int m = (int) g[i].size();
+                ans += m * 1ll * (m - 1) / 2 - 1;
+            }
+        }
+        return ans;
+    }
+};

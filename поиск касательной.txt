@@ -1,0 +1,213 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define sz(a) (int) (a).size()
+#define eb emplace_back
+#define ld long double
+#define ve vector
+#define forn(i, n) for (int i = 0; i < n; i++)
+
+pii go(pii a, pii b) {
+    return {b.fi - a.fi, b.se - a.se};
+}
+
+int sin(pii x, pii y) {
+    return x.fi * y.se - x.se * y.fi;
+}
+
+int cos(pii x, pii y) {
+    return x.fi * y.fi + x.se * y.se;
+}
+
+int in(pii A, pii B, pii C) {
+    return sin(go(A, B), go(A, C)) == 0;
+}
+
+int check(pii A, pii B, pii C, pii D) {
+    A = go(B, A);
+    C = go(B, C);
+    D = go(B, D);
+    if (sin(A, D) >= 0 && sin(D, C) >= 0) return 1;
+    return 0;
+}
+
+int in_triangle(pii A, pii B, pii C, pii D) {
+    return check(B, A, C, D) & check(A, C, B, D) & check(C, B, A, D);
+}
+
+pii solve(ve<pii>& a, pii A) {
+    int k = sz(a) / 2;
+    pii res;
+    auto chkr = [&] (int idb) {
+        int p = (idb + k - 1) % k;
+        int d = (idb + 1) % k;
+        if (sin(go(a[p], a[idb]), go(A, a[idb])) > 0 && 
+        sin(go(A, a[idb]), go(a[idb], a[d])) >= 0
+        ) return 1;
+        return 0;
+    };
+    auto chkl = [&] (int idc) {
+        int p = (idc + k - 1) % k;
+        int d = (idc + 1) % k;
+        if (sin(go(a[idc], a[p]), go(A, a[idc])) > 0 && 
+        sin(go(A, a[idc]), go(a[d], a[idc])) >= 0
+        ) return 1;
+        return 0;
+    };
+    int idb = 0;
+    if (!chkr(idb)) {
+        int l = 0, r = k;
+        int type;
+        if (sin(go(A, a[0]), go(A, a[1])) >= 0) type = 1;
+        else type = 0;
+        //cout << type << endl;
+        while (l + 1 < r) {
+            int m = (l + r) / 2;
+            //cout << l << " " << r << endl;
+            //cout << a[m - 1].fi << " " << a[m - 1].se << " " << a[m].fi << " " << a[m].se << endl;
+            if (sin(go(A, a[0]), go(A, a[m])) >= 0) {
+                if (type == 0) {
+                    r = m;
+                }
+                else {
+                    l = m;
+                }
+                //cout << "A" << endl;
+            }
+            else if (sin(go(A, a[m - 1]), go(A, a[m])) <= 0) {
+                l = m;
+                //cout << "B" << endl;
+            }
+            else {
+                r = m;
+                //cout << "C" << endl;
+            }
+        }
+        idb = l;
+        //cout << idb << endl;
+    }
+    //while (!chkr(idb)) idb = (idb + 1) % k;
+    int idc = 0;
+    if (!chkl(idc)) {
+        int l = 0, r = k;
+        int type;
+        if (sin(go(A, a[0]), go(A, a[1])) >= 0) type = 0;
+        else type = 1;
+        //cout << type << endl;
+        while (l + 1 < r) {
+            int m = (l + r) / 2;
+            //cout << l << " " << r << endl;
+            //cout << a[m - 1].fi << " " << a[m - 1].se << " " << a[m].fi << " " << a[m].se << endl;
+            if (sin(go(A, a[0]), go(A, a[m])) <= 0) {
+                if (type == 0) {
+                    r = m;
+                }
+                else {
+                    l = m;
+                }
+                //cout << "A" << endl;
+            }
+            else if (sin(go(A, a[m - 1]), go(A, a[m])) >= 0) {
+                l = m;
+                //cout << "B" << endl;
+            }
+            else {
+                r = m;
+                //cout << "C" << endl;
+            }
+        }
+        idc = l;
+        //cout << idb << endl;
+    }
+    res = {idb, idc};
+    return res;
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n;
+    cin >> n;
+    ve<pii> b(n);
+    forn (i, n) cin >> b[i].fi >> b[i].se;
+    int k;
+    cin >> k;
+    ve<pii> a(k);
+    forn (i, k) cin >> a[i].fi >> a[i].se;
+    forn (i, k) a.pb(a[i]);
+    ve<pii> dp(n);
+    forn (i, n) {
+        dp[i] = solve(a, b[i]);
+    }
+    auto bad = [&] (int x, int y) {
+        pii A = a[dp[x].fi], B = b[x], C = a[dp[x].se], Y = b[y];
+        if (in(A, B, Y) || in(B, C, Y)) return 0;
+        if (!check(A, B, C, Y)) return 0;
+        int l, r;
+        if (dp[x].se < dp[x].fi) {
+            l = dp[x].se, r = dp[x].fi;
+        }
+        else {
+            l = dp[x].se, r = dp[x].fi + k;
+        }
+        while (l + 1 < r) {
+            int m = (l + r) / 2;
+            if (sin(go(B, a[m]), go(B, Y)) >= 0) {
+                r = m;
+            }
+            else {
+                l = m;
+            }
+        }
+        if (in_triangle(B, a[r], a[r - 1], Y)) return 0;
+        return 1;
+    };
+    //forn (i, n) {
+    //    forn (j, n) {
+    //        //cout << i << " "  << j << " " << bad(i, j) << endl;
+    //    }
+    //}
+    ve<int> used(n), used2(n);
+    ve<int> need, L, R;
+    forn (i, n) {
+        if (!bad(0, i)) {
+            used[i] = 1;
+            if (i) {
+                if (sin(go(b[i], a[dp[i].se]), go(b[0], a[dp[0].se])) >= 0) {
+                    L.pb(i);
+                }
+                if (sin(go(b[i], a[dp[i].fi]), go(b[0], a[dp[0].fi])) <= 0) {
+                    R.pb(i);
+                }
+            }
+        }
+    }
+    sort(all(L), [&] (int x, int y) { 
+        return sin(go(b[x], a[dp[x].se]), go(b[y], a[dp[y].se])) >= 0; 
+    });
+    if (sz(L)) need.pb(L[0]);
+    sort(all(R), [&] (int x, int y) { 
+        return sin(go(b[x], a[dp[x].fi]), go(b[y], a[dp[y].fi])) <= 0; 
+    });
+    if (sz(R)) need.pb(R[0]);
+    forn (i, n) {
+        //if (i > 0 && used[i] && sz(need) < 2000) need.pb(i);
+    }
+    for (auto i : need) {
+        forn (j, n) {
+            if (!bad(i, j)) used2[j] = 1;
+        }
+    }
+    int cnt = 0;
+    for (int i = 1; i < n; i++) if (used[i] || used2[i]) cnt++;
+    cout << cnt;
+}

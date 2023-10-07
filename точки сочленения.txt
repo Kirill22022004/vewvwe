@@ -1,0 +1,73 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+vector<vector<int>> g;
+vector<bool> used;
+vector<int> tin;
+vector<int> up;
+set<int> ans;
+int tmp = 0, kol = 0, kor = 0;
+
+void dfs(int v, int pr) {
+    used[v] = true;
+    tin[v] = tmp++;
+    up[v] = tin[v];
+    for (auto u : g[v]) {
+        if (!used[u]) {
+            if (v == kor) {
+                kol++;
+            }
+            dfs(u, v);
+            up[v] = min(up[v], up[u]);
+            if (up[u] >= tin[v] && v != kor && u != pr) {
+                ans.insert(v + 1);
+            }
+        } else if (u != pr) {
+            up[v] = min(up[v], tin[u]);
+        }
+    }
+    if (v == kor && kol >= 2) {
+        ans.insert(v + 1);
+    }
+}
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+    tin.resize(n + m, -1);
+    up.resize(n + m, -1);
+    g.resize(n + m);
+    used.resize(n + m, false);
+    for (int i = 0; i < m; i++) {
+        int x, y, z;
+        cin >> x >> y >> z;
+        x--;
+        y--;
+        z--;
+        int ind = n + i;
+        g[ind].push_back(x);
+        g[ind].push_back(y);
+        g[ind].push_back(z);
+        g[x].push_back(ind);
+        g[y].push_back(ind);
+        g[z].push_back(ind);
+    }
+    for (int i = 0; i < n + m; i++) {
+        if (!used[i]) {
+            kol = 0;
+            kor = i;
+            dfs(i, -1);
+        }
+    }
+    vector<int> ans2;
+    for (auto c : ans) {
+        if (c > n) {
+            ans2.push_back(c - n);
+        }
+    }
+    cout << ans2.size() << endl;
+    for (auto c : ans2) {
+        cout << c << " ";
+    }
+}

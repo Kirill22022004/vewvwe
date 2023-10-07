@@ -1,0 +1,55 @@
+struct permutation {
+    int n;
+    vector<int> p;
+
+    permutation(int n = 0) :  n(n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+    }
+
+    permutation(vector<int> p) : n((int) p.size()), p(p) {}
+
+    void read() {
+        for (int i = 0; i < n; i++) {
+            cin >> p[i];
+            p[i]--;
+        }
+    }
+
+    int size() const {
+        return n;
+    }
+
+    int& operator[](size_t i) {
+        return p[i];
+    }
+
+    const int& operator[](size_t i) const {
+        return p[i];
+    }
+
+    friend permutation operator*(const permutation& a, const permutation& b) {
+        assert(a.size() == b.size());
+        permutation c(a.size());
+        for (int i = 0; i < a.size(); i++) {
+            c[i] = a[b[i]];
+        }
+        return c;
+    }
+
+    friend permutation inv(permutation& a) {
+        permutation c(a.size());
+        for (int i = 0; i < a.size(); i++) {
+            c[a[i]] = i;
+        }
+        return c;
+    }
+
+    void print() {
+        cout << "n = " << n << " :";
+        for (int i = 0; i < n; i++) {
+            cout << " " << p[i];
+        }
+        cout << endl;
+    }
+};

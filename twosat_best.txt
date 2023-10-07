@@ -1,0 +1,101 @@
+struct twosat {
+    int n;
+    vector<vector<int>> g;
+    vector<int> values, tin, comp, ts;
+    int time = 0;
+
+    twosat(int n = 0) : n(n), g(2 * n) {}
+
+    int new_vertex() {
+        g.push_back({});
+        g.push_back({});
+        return n++;
+    }
+
+    void add(int i, int ti, int j, int tj) { // or
+        g[i * 2 + (ti ^ 1)].push_back(j * 2 + tj);
+        g[j * 2 + (tj ^ 1)].push_back(i * 2 + ti);
+    }
+
+    void implication(int i, int ti, int j, int tj) {
+        add(i, ti ^ 1, j, tj);
+    }
+
+    void set(int i, int ti) {
+        add(i, ti, i, ti);
+    }
+
+    void at_most_one(const vector<pair<int, int>>& a) {
+        if ((int) a.size() <= 1) {
+            return;
+        }
+        pair<int, int> tmp = {a[0].first, a[0].second ^ 1};
+        for (int i = 1; i + 1 < (int) a.size(); i++) {
+            int next = new_vertex();
+            add(tmp.first, tmp.second, a[i].first, a[i].second ^ 1);
+            add(next, 1, a[i].first, a[i].second ^ 1);
+            add(next, 1, tmp.first, tmp.second);
+            tmp = {next, 0};
+        }
+        add(tmp.first, tmp.second, a.back().first, a.back().second ^ 1);
+    }
+
+    int all_true(const vector<pair<int, int>>& a) {
+        int v = new_vertex();
+        for (auto [i, j] : a) {
+            implication(v, 1, i, j);
+        }
+        return v;
+    }
+
+    vector<pair<int, int>> build_pref(const vector<pair<int, int>>& a) {
+        vector<pair<int, int>> b((int) a.size());
+        b[0] = a[0];
+        for (int i = 1; i < (int) a.size(); i++) {
+            int v = new_vertex();
+            implication(v, 1, b[i - 1].first, b[i - 1].second);
+            implication(v, 1, a[i].first, a[i].second);
+            b[i] = {v, 1};
+        }
+        return b;
+    }
+
+    int dfs(int v) {
+        int low = tin[v] = ++time;
+        ts.push_back(v);
+        for (auto u : g[v]) {
+            if (!comp[u]) {
+                low = min(low, tin[u] ? tin[u] : dfs(u));
+            }
+        }
+        if (low == tin[v]) {
+            int x;
+            do {
+                x = ts.back();
+                ts.pop_back();
+                comp[x] = low;
+                if (values[x / 2] == -1) {
+                    values[x / 2] = x & 1;
+                }
+            } while (x != v);
+        }
+        return tin[v] = low;
+    }
+
+    bool solve() {
+        values.resize(n, -1);
+        tin.resize(2 * n, 0);
+        comp.resize(2 * n, 0);
+        for (int i = 0; i < 2 * n; i++) {
+            if (!comp[i]) {
+                dfs(i);
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            if (comp[i * 2] == comp[i * 2 + 1]) {
+                return false;
+            }
+        }
+        return true;
+    }
+};

@@ -1,0 +1,19 @@
+void lindon(string s) {
+    int n = s.size(), i = 0;
+    while (i < n) {
+        int k = i, j = i + 1;
+        while (j < n && s[k] <= s[j]) {
+            if (s[k] < s[j]) {
+                k = i;
+            }
+            else {
+                k++;
+            }
+            j++;
+        }
+        while (i <= k) {
+            cout << s.substr(i, j - k) << " ";
+            i += j - k;
+        }
+    }
+}

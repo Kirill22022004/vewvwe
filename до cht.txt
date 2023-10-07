@@ -1,0 +1,73 @@
+#define int long long
+
+struct line {
+    int k, b;
+    line() : k(0), b(1e18) {}
+    line(int k, int b) : k(k), b(b) {}
+};
+
+long double X(line a, line b) {
+    return ((long double) b.b - a.b) / ((long double) a.k - b.k);
+}
+
+vector<line> t[4 * N], tmp;
+line a[N];
+
+bool cmp(line x, line y) {
+    if (x.k != y.k) {
+        return x.k < y.k;
+    }
+    return x.b < y.b;
+}
+
+void build(int v, int l, int r) {
+    if (l + 1 != r) {
+        int m = (l + r) / 2;
+        build(v * 2 + 1, l, m);
+        build(v * 2 + 2, m, r);
+    }
+    tmp.clear();
+    if (l + 1 == r) {
+        tmp = {a[l]};
+    } else {
+        tmp.resize((int) t[v * 2 + 1].size() + (int) t[v * 2 + 2].size());
+        merge(t[v * 2 + 1].begin(), t[v * 2 + 1].end(), t[v * 2 + 2].begin(), t[v * 2 + 2].end(), tmp.begin(), cmp);
+    }
+    for (auto l : tmp) {
+        if ((int) t[v].size() > 0 && t[v].back().k == l.k) {
+            t[v].pop_back();
+            t[v].push_back(l);
+            continue;
+        }
+        while ((int) t[v].size() > 1) {
+            line x = t[v].back();
+            t[v].pop_back();
+            line y = t[v].back();
+            if (X(x, y) <= X(y, l)) {
+                t[v].push_back(x);
+                break;
+            }
+        }
+        t[v].push_back(l);
+    }
+}
+
+int get(int v, int l, int r, int l1, int r1, int x) {
+    if (l1 >= r || l >= r1) {
+        return -5e18;
+    }
+    if (l1 <= l && r <= r1) {
+        int vl = 0, vr = t[v].size();
+        while (vl + 1 < vr) {
+            int m = (vl + vr) / 2;
+            if (X(t[v][m], t[v][m - 1]) <= x) {
+                vl = m;
+            } else {
+                vr = m;
+            }
+        }
+        return t[v][vl].k * x + t[v][vl].b;
+    }
+    int m = (l + r) / 2;
+    return max(get(v * 2 + 1, l, m, l1, r1, x), get(v * 2 + 2, m, r, l1, r1, x));
+}

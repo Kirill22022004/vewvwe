@@ -1,0 +1,135 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define all(a) (a).begin(), (a).end()
+#define pb push_back
+#define pii pair<int, int>
+#define fi first
+#define se second
+
+struct node {
+    int x = 0, y = 0, cnt = 0;
+    node* l;
+    node* r;
+    node() {};
+    node(int x) : x(x), y((rand() << 16) + rand()), cnt(1), l(nullptr), r(nullptr) {};
+};
+
+typedef node* pnode;
+
+void update(pnode t) {
+    t->cnt = 1;
+    if (t->l) t->cnt += t->l->cnt;
+    if (t->r) t->cnt += t->r->cnt;
+}
+
+pair<pnode, pnode> split(pnode t, int x) {
+    if (!t) return {nullptr, nullptr};
+    if (t->x <= x) {
+        auto res = split(t->r, x);
+        t->r = res.fi;
+        update(t);
+        return {t, res.se};
+    }
+    else {
+        auto res = split(t->l, x);
+        t->l = res.se;
+        update(t);
+        return {res.fi, t};
+    }
+}
+
+pnode merge(pnode a, pnode b) {
+    if (!a) return b;
+    if (!b) return a;
+    if (a->y < b->y) {
+        a->r = merge(a->r, b);
+        update(a);
+        return a;
+    }
+    else {
+        b->l = merge(a, b->l);
+        update(b);
+        return b;
+    }
+}
+
+vector<int> ans, ind;
+vector<vector<int>> g;
+vector<pnode> a;
+vector<int> Z, Z2;
+
+void dfs(int x) {
+    Z.pb(x);
+    for (auto y : g[x]) dfs(y);
+}
+
+void dfs2(int x) {
+    Z2.pb(x);
+    for (auto y : g[x]) dfs2(y);
+}
+
+void solve(int v) {
+    ans[v] = 0;
+    if (g[v].size() == 0) {
+        a[v] = new node(v);
+        return;
+    }
+    int j = -1;
+    for (auto x : g[v]) {
+        solve(x);
+        if (j == -1 || a[ind[x]]->cnt > a[ind[j]]->cnt) j = x;
+    }
+    ans[v] += ans[j];
+    ind[v] = ind[j];
+    Z.clear();
+    Z2.clear();
+    Z.pb(v);
+    bool f = false;
+    for (auto x : g[v]) {
+        if (x != j) {
+            if (f) dfs2(x);
+            else dfs(x);
+        }
+        else f = true;
+    }
+    for (auto x : Z2) {
+        auto res = split(a[ind[v]], x);
+        pnode A = new node(x);
+        if (res.se) ans[v] += res.se->cnt;
+        a[ind[v]] = merge(res.fi, merge(A, res.se));
+    }
+    reverse(all(Z));
+    for (auto x : Z) {
+        auto res = split(a[ind[v]], x);
+        pnode A = new node(x);
+        if (res.fi) ans[v] += res.fi->cnt;
+        a[ind[v]] = merge(res.fi, merge(A, res.se));
+    }
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n;
+    cin >> n;
+    ans.resize(n);
+    g.resize(n);
+    a.resize(n);
+    ind.resize(n);
+    iota(all(ind), 0);
+    for (int i = 0; i < n; i++) {
+        int k;
+        cin >> k;
+        while (k--) {
+            int x;
+            cin >> x;
+            g[i].pb(x - 1);
+        }
+    }
+    solve(0);
+    for (auto x : ans) cout << x << " ";
+}

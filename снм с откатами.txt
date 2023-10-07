@@ -1,0 +1,43 @@
+class dsu {
+public :
+    vector<int> p, rang, t;
+    int n, comp, cur_time;
+    vector<pair<int, int>> changes;
+    dsu(int n) : n(n), comp(n), cur_time(0) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        rang.resize(n, 1);
+    }
+    int get(int x) {
+        return (x == p[x] ? x : get(p[x]));
+    }
+    bool unite(int x, int y) {
+        x = get(x);
+        y = get(y);
+        if (rang[x] < rang[y]) swap(x, y);
+        if (x != y) {
+            comp--;
+            changes.push_back({y, rang[x]});
+            cur_time++;
+            p[y] = x;
+            rang[x] += (rang[x] == rang[y]);
+            return true;
+        }
+        return false;
+    }
+    void save() {
+        t.push_back(cur_time);
+    }
+    void rollback() {
+        int k = t.back();
+        t.pop_back();
+        while (changes.size() > k) {
+            int x = changes.back().first, z = changes.back().second;
+            rang[p[x]] = z;
+            p[x] = x;
+            comp++;
+            changes.pop_back();
+            cur_time--;
+        }
+    }
+};

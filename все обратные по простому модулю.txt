@@ -1,0 +1,8 @@
+vector<int> obr(int m) {
+    vector<int> res(m, -1);
+    res[1] = 1;
+    for (int i = 2; i < m; i++) {
+        res[i] = ((-1 * (m / i) * res[m % i]) % m + m) % m;
+    }
+    return res;
+}
