@@ -1,0 +1,31 @@
+struct tree {
+    vector<int> t;
+
+    tree(int n) {
+        t.resize(n);
+    }
+
+    void clear() {
+        fill(all(t), 0);
+    }
+
+    void update(int i, int x) {
+        while (i < sz(t)) {
+            t[i] += x;
+            i = (i | (i + 1));
+        }
+    }
+
+    int get(int x) {
+        int res = 0;
+        while (x >= 0) {
+            res += t[x];
+            x = (x & (x + 1)) - 1;
+        }
+        return res;
+    }
+
+    int get(int l, int r) {
+        return get(r) - get(l - 1);
+    }
+};

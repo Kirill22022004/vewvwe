@@ -1,0 +1,246 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+double start = clock();
+
+bool doubleEqual(long double a, long double b) {
+    return fabs(a - b) < 1e-9;
+}
+
+bool doubleLess(long double a, long double b) {
+    return a < b && !doubleEqual(a, b);
+}
+
+long double mysqrt(long double a) {
+    if (doubleLess(a, 0)) {
+        assert(false);
+    }
+    if (a < 0) return 0;
+    return sqrt(a);
+}
+
+struct Point{
+    long double x, y;
+    Point() : x(0), y(0) {}
+    Point(long double x, long double y) : x(x), y(y) {}
+    Point operator +(const Point& a) const {
+        return Point(x + a.x, y + a.y);
+    }
+    Point operator -(const Point& a) const {
+        return Point(x - a.x, y - a.y);
+    }
+    Point operator *(long double k) const {
+        return Point(x * k, y * k);
+    }
+    Point operator /(long double k) const {
+        return Point(x / k, y / k);
+    }
+    bool operator ==(const Point& a) const {
+        return doubleEqual(x, a.x) && doubleEqual(y, a.y);
+    }
+    long double operator *(const Point &b) const {
+        return x * b.y - y * b.x;
+    }
+    long double operator %(const Point &b) const {
+        return x * b.x + y * b.y;
+    }
+    long double len() const {
+        return mysqrt(*this % *this);
+    }
+    long double len2() const {
+        return (*this % *this);
+    }
+    long double distto(const Point& a) const {
+        return (*this - a).len();
+    }
+    long double distto(const Point& a, const Point& b) const {
+        long double d = a.distto(b);
+        Point v = *this;
+        if (doubleEqual(d, 0)) {
+            return v.distto(a);
+        }
+        long double s = (*this - a) * (*this - b);
+        return fabs(s) / d;
+    }
+    Point normalize(long double k = 1) const {
+        long double l = len();
+        if (doubleEqual(l, 0)) {
+            return Point();
+        }
+        return (*this) * (k / l);
+    }
+    Point getH(const Point& a, const Point& b) const {
+        Point c = *this;
+        if (a == b) return a;
+        Point v = b - a, u = c - a;
+        long double k = (v % u) / v.len();
+        v = v.normalize(k);
+        Point H = a + v;
+        return H;
+    }
+    Point rotate() const {
+        return Point(-y, x);
+    }
+    bool isZero() const {
+        return doubleEqual(x, 0) && doubleEqual(y, 0);
+    }
+};
+
+int getIntersection(const Point& a, long double ra, const Point& b, long double rb, Point& M, Point& N) {
+    long double d = a.distto(b);
+    if (doubleLess(ra + rb, d) || doubleLess(d, fabs(ra - rb))) {
+        return 0;
+    }
+    long double A = (ra * ra - rb * rb + d * d) / 2.0 / d;
+    long double h = mysqrt(ra * ra - A * A);
+    Point v = b - a, u = v.rotate();
+    v = v.normalize(A);
+    u = u.normalize(h);
+    Point H = a + v;
+    M = H + u, N = H - u;
+    if (u.isZero()) return 1;
+    return 2;
+}
+
+int getIntersection(const Point& a, const Point& b, const Point& O, long double r, Point& M, Point& N) {
+    long double h = O.distto(a, b);
+    if (doubleLess(r, h)) {
+        return 0;
+    }
+    Point H = O.getH(a, b), v = b - a;
+    long double k = mysqrt(r * r - h * h);
+    v = v.normalize(k);
+    M = H + v;
+    N = H - v;
+    if (v.isZero()) return 1;
+    return 2;
+}
+
+struct circle{
+    long double x, y, r;
+    circle(Point a, long double r) : x(a.x), y(a.y), r(r) {}
+    circle(long double x, long double y, long double r) : x(x), y(y), r(r) {}
+};
+
+#define ld long double
+
+void solve() {
+    ld X, Y;
+    int n;
+    cin >> X >> Y >> n;
+    vector<int> type(n + 4);
+    vector<Point> a(n);
+    vector<int> gist[(int) X + 1];
+    for (int i = 0; i < n; i++) {
+        int x, y;
+        cin >> x >> y;
+        gist[x].push_back(y);
+        a[i] = Point(x, y);
+    }
+    mt19937 gen(time(0));
+    shuffle(a.begin(), a.end(), gen);
+    vector<int> p;
+    for (int i = 0; i < (int) X + 1; i++) {
+        sort(gist[i].begin(), gist[i].end());
+        if ((int) gist[i].size() > 0) p.push_back(i);
+    }
+    type[n] = type[n + 1] = type[n + 2] = type[n + 3] = 1;
+    ld ans = 0, eps = 1e-6;
+    auto check2 = [&] (circle A) {
+        ld r = A.r;
+        if (A.x - r < 0 || A.x + r > X || A.y - r < 0 || A.y + r > Y) return false;
+        int L = (int) A.x - r - 5;
+        int R = (int) A.x + r + 5;
+        int it = lower_bound(p.begin(), p.end(), L) - p.begin();
+        while (it < (int) p.size() && p[it] <= R) {
+            for (auto y : gist[p[it]]) {
+                if (Point(A.x, A.y).distto(Point(p[it], y)) < r - eps) {
+                    return false;
+                }
+            }
+            it++;
+        }
+        return true;
+    };
+    auto check = [&] (circle A) {
+        if (!check2(A)) return false;
+        for (int i = 0; i < n; i++) {
+            Point B, C;
+            int cnt = getIntersection(Point(A.x, A.y), A.r * 2.0, a[i], A.r, B, C);
+            if (cnt >= 1 && check2(circle(B, A.r))) return true;
+            if (cnt >= 2 && check2(circle(C, A.r))) return true;
+        }
+        ld r = A.r;
+        for (int i = 0; i < 4; i++) {
+            Point y, z;
+            if (i == 0) y = Point(0, r), z = Point(X, r);
+            if (i == 1) y = Point(r, 0), z = Point(r, Y);
+            if (i == 2) y = Point(0, Y - r), z = Point(X, Y - r);
+            if (i == 3) y = Point(X - r, Y), z = Point(X - r, 0);
+            Point B, C;
+            int cnt = getIntersection(y, z, Point(A.x, A.y), A.r * 2.0, B, C);
+            if (cnt >= 1 && check2(circle(B, A.r))) return true;
+            if (cnt >= 2 && check2(circle(C, A.r))) return true;
+        }
+        if (check2(circle(A.x - 2 * A.r, A.y, A.r))) return true;
+        return false;
+    };
+    auto chk = [&] (ld r) {
+        for (int i = 0; i < n + 4; i++) {
+            for (int j = i + 1; j < n + 4; j++) {
+                if (type[i] == 0 && type[j] == 0) {
+                    Point A, B;
+                    int cnt = getIntersection(a[i], r, a[j], r, A, B);
+                    int ok = 0;
+                    if (cnt >= 1 && check(circle(A, r))) return true;
+                    if (cnt >= 2 && check(circle(B, r))) return true;
+                } else if (type[i] + type[j] == 1) {
+                    Point A, B;
+                    Point y, z;
+                    if (j - n == 0) y = Point(0, r), z = Point(X, r);
+                    if (j - n == 1) y = Point(r, 0), z = Point(r, Y);
+                    if (j - n == 2) y = Point(0, Y - r), z = Point(X, Y - r);
+                    if (j - n == 3) y = Point(X - r, Y), z = Point(X - r, 0);
+                    int cnt = getIntersection(y, z, a[i], r, A, B);
+                    int ok = 0;
+                    if (cnt >= 1 && check(circle(A, r))) return true;
+                    if (cnt >= 2 && check(circle(B, r))) return true;
+                } else if (i % 2 != j % 2) {
+                    Point A;
+                    if (i - n == 0) {
+                        if (j - n == 1) A = Point(r, r);
+                        if (j - n == 3) A = Point(X - r, r);
+                    } else {
+                        if (i - n == 1) A = Point(r, Y - r);
+                        if (i - n == 3) A = Point(X - r, Y - r);
+                    }
+                    if (check(circle(A, r))) return true;
+                }
+            }
+        }
+        return false;
+    };
+    ld l = 0, r = min(X, Y) / 2.0  + eps;
+    for (int j = 0; j < 35 && r - l > eps;) {
+        if ((clock() - start) / CLOCKS_PER_SEC > 1.8) break;
+        ld m = (l + r) / 2;
+        if (chk(m)) {
+            l = m;
+        } else {
+            r = m;
+        }
+    }
+    cout << fixed << setprecision(15) << l << '\n';
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int q;
+    cin >> q;
+    while (q--) {
+        solve();
+    }
+}

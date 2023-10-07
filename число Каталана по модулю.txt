@@ -1,0 +1,20 @@
+int binpow(int x, int n, int MOD) {
+    if (n == 0) return 1 % MOD;
+    int res = 1;
+    if (n % 2 == 1) res *= x;
+    return (binpow((x * x) % MOD, n / 2, MOD) * res) % MOD;
+}
+
+void update(int x,int MOD) {
+    fact.clear();
+    fact.resize(x + 1, 1);
+    for (int i = 2; i <= x; i++) fact[i] = (fact[i - 1] * i) % MOD;
+}
+
+int C(int n, int k, int MOD) {
+    return (((fact[n] * binpow(fact[k], MOD - 2, MOD)) % MOD) * binpow(fact[n - k], MOD - 2, MOD)) % MOD;
+}
+
+int K(int n, int MOD) {
+    return (C(2 * n, n, MOD) * binpow(n + 1, MOD - 2, MOD)) % MOD;
+}

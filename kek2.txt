@@ -1,0 +1,112 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define sz(a) (int) (a).size()
+#define eb emplace_back
+#define ld long double
+
+const int mod = 1e9 + 7;
+const int N = 6e5;
+vector<int> g[N];
+vector<int> tin(N);
+int T = 0, sz[N], tout[N], realsz[N];
+
+void dfs(int v) {
+    tin[v] = T++;
+    if (!sz(g[v])) {
+        sz[v] = 1;
+    }
+    else {
+        sz[v] = 0;
+    }
+    realsz[v] = 1;
+    for (auto x : g[v]) {
+        dfs(x);
+        sz[v] += sz[x];
+        realsz[v] += realsz[x];
+    }
+    tout[v] = T;
+}
+
+bool check(int x, int y) {
+    if (tin[x] <= tin[y] && tout[y] <= tout[x]) return true;
+    return false;
+}
+
+vector<int> t;
+
+void update(int v, int l, int r, int i) {
+    if (l + 1 == r) {
+        t[v]++;
+        return;
+    }
+    int m = (l + r) / 2;
+    if (i < m) {
+        update(v * 2 + 1, l, m, i);
+    }
+    else {
+        update(v * 2 + 2, m, r, i);
+    }
+    t[v] = t[v * 2 + 1] + t[v * 2 + 2];
+}
+
+int get(int v, int l, int r, int l1, int r1) {
+    if (l >= r1 || l1 >= r) return 0;
+    if (l1 <= l && r <= r1) return t[v];
+    int m = (l + r) / 2;
+    return get(v * 2 + 1, l, m, l1, r1) + get(v * 2 + 2, m, r, l1, r1);
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, m;
+    cin >> n >> m;
+    for (int i = 1; i < n; i++) {
+        int x;
+        cin >> x;
+        g[x - 1].pb(i);
+    }
+    dfs(0);
+    t.resize(4 * n, 0);
+    vector<int> p(n, -1);
+    for (int i = 0; i < m; i++) {
+        int x, y;
+        cin >> x >> y;
+        x--, y--;
+        if (p[x] == -1) p[x] = y;
+        else {
+            if (check(p[x], y)) p[x] = y;
+            else if (check(y, p[x])) continue;
+            else {
+                cout << 0;
+                return 0;
+            }
+        }
+    }
+    int ans = 1;
+    vector<int> b;
+    for (int i = 0; i < n; i++) if (p[i] != -1) b.pb(p[i]);
+    for (int j = 1; j <= sz[0] - sz(b); j++) ans = (ans * j) % mod;
+    sort(all(b), [&] (int x, int y) { return tin[x] > tin[y]; });
+    for (auto x : b) {
+        int ban = get(0, 0, n, tin[x], tin[x] + realsz[x]);
+        //cout << x << " " << tin[x] << " " << ban << endl;
+        if (ban >= sz[x]) {
+            cout << 0;
+            return 0;
+        }
+        ans = (ans * (sz[x] - ban)) % mod;
+        update(0, 0, n, tin[x]);
+    }
+    cout << ans;
+}

@@ -1,0 +1,58 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+
+set<pair<int, int>> a;
+
+void add(int l, int r) {
+    auto it = a.lower_bound(make_pair(l, r));
+    if (it != a.end() && (*it).first == r + 1) {
+        r = (*it).second;
+        a.erase(it);
+    }
+    it = a.lower_bound(make_pair(l, r));
+    if (it != a.begin()) {
+        it = prev(it);
+        if ((*it).second + 1 == l) {
+            l = (*it).first;
+            a.erase(it);
+        }
+    }
+    a.insert({l, r});
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, l, r;
+    cin >> n >> l >> r;
+    while (n--) {
+        char c;
+        int x;
+        cin >> c >> x;
+        auto it = a.lower_bound(make_pair(x, r + 22));
+        int cnt = 0;
+        if (it != a.begin()) {
+            it = prev(it);
+            if ((*it).first <= x && x <= (*it).second) {
+                cnt = 1;
+            }
+        }
+        if (c == '?') {
+            cout << cnt << '\n';
+            continue;
+        }
+        if (cnt == 0) {
+            add(x, x);
+        } else {
+            int l = (*it).first, r = (*it).second;
+            int pos = r - (x - l);
+            a.erase(it);
+            add(l - 1, pos - 1);
+            add(pos + 1, r + 1);
+        }
+    }
+}

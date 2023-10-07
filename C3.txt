@@ -1,0 +1,157 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+const int N = 1000022;
+vector<int> ga[N], gb[N], gc[N];
+vector<int> tmp = {0}, tmp2, ts;
+int n, ans = 2 * N, ansv, ansu, sz[N], root[N], dist[N], ban[N], siz[N], dist2[N], ind[N], t = 0, h[N], last[N], cnt = 0;
+pair<int, int> dp[N];
+
+void get_sz(int v, int pr) {
+    sz[v] = 1;
+    for (int x : ga[v]) {
+        if (x != pr) {
+            get_sz(x, v);
+            sz[v] += sz[x];
+        }
+    }
+}
+
+int centr(int v, int pr, int n) {
+    for (int x : ga[v]) {
+        if (x != pr && sz[x] >= (n + 1) / 2) {
+            return centr(x, v, n);
+        }
+    }
+    return v;
+}
+
+void get_size(int v, int pr) {
+    siz[v] = 1;
+    for (int x : gb[v]) {
+        if (x != pr && !ban[x]) {
+            get_size(x, v);
+            siz[v] += siz[x];
+        }
+    }
+}
+
+int centr2(int v, int pr, int n) {
+    for (int x : gb[v]) {
+        if (x != pr && !ban[x] && siz[x] >= (n + 1) / 2) {
+            return centr2(x, v, n);
+        }
+    }
+    return v;
+}
+
+void dfs(int v, int pr, int d, int r) {
+    root[ind[v]] = r;
+    dist[ind[v]] = d;
+    for (int x : ga[v]) {
+        if (x != pr) {
+            dfs(x, v, d + 1, r);
+        }
+    }
+}
+
+void bfs(int v, int pr, int d, int c) {
+    if (last[root[v]] != cnt) {
+        dp[root[v]] = {dist[v] + d, v};
+        last[root[v]] = cnt;
+    } else {
+        int res = d + dist[v] + dp[root[v]].first;
+        if (res < ans) {
+            ans = res, ansv = v, ansu = dp[root[v]].second;
+        }
+        dp[root[v]] = min(dp[root[v]], {dist[v] + d, v});
+    }
+    for (int x : gb[v]) {
+        if (x != pr && h[x] >= c) {
+            bfs(x, v, d + 1, c);
+        }
+    }
+}
+
+void solve(int v, int d) {
+    get_size(v, -1);
+    v = centr2(v, -1, siz[v]);
+    h[v] = d;
+    ban[v] = 1;
+    for (int x : gb[v]) {
+        if (!ban[x]) {
+            solve(x, d + 1);
+        }
+    }
+}
+
+void flex(int v, int pr) {
+    ind[v] = t++;
+    ts.push_back(v);
+    vector<pair<int, int>> st;
+    for (int x : gb[v]) {
+        if (x != pr) {
+            st.push_back({siz[x], x});
+        }
+    }
+    sort(st.rbegin(), st.rend());
+    for (auto [d, x] : st) {
+        flex(x, v);
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    cin >> n;
+    for (int i = 1; i < n; i++) {
+        int p;
+        cin >> p;
+        p--;
+        ga[p].push_back(i);
+        ga[i].push_back(p);
+    }
+    for (int i = 1; i < n; i++) {
+        int p;
+        cin >> p;
+        p--;
+        gb[p].push_back(i);
+        gb[i].push_back(p);
+    }
+    get_size(0, -1);
+    flex(0, -1);
+    for (int v = 0; v < n; v++) {
+        for (int x : gb[v]) {
+            gc[ind[v]].push_back(ind[x]);
+        }
+    }
+    for (int v = 0; v < n; v++) {
+        gb[v] = gc[v];
+    }
+    solve(0, 0);
+    while ((int) tmp.size()) {
+        for (int& v : tmp) {
+           get_sz(v, -1);
+           v = centr(v, -1, sz[v]);
+           dfs(v, -1, 0, v);
+        }
+        for (int v = 0; v < n; v++) {
+            cnt++;
+            bfs(v, -1, 0, h[v]);
+        }
+        tmp2 = {};
+        for (int v : tmp) {
+            for (int x : ga[v]) {
+                tmp2.push_back(x);
+                int i = 0;
+                while (ga[x][i] != v) i++;
+                swap(ga[x][i], ga[x].back());
+                ga[x].pop_back();
+            }
+        }
+        tmp = tmp2;
+    }
+    cout << ans << '\n' << ts[ansv] + 1 << " " << ts[ansu] + 1 << '\n';
+}

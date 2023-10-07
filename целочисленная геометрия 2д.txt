@@ -1,0 +1,273 @@
+struct Point { // вектор или точка
+    long long x = 0, y = 0;
+    Point() {};
+    Point(long long x, long long y) : x(x), y(y) {};
+    Point operator +(const Point& a) const { // сложение векторов
+        return Point(x + a.x, y + a.y);
+    }
+    Point operator -(const Point& a) const { // вычитание векторов
+        return Point(x - a.x, y - a.y);
+    }
+    Point operator -() const { // противоположный вектор
+        return Point(-x, -y);
+    }
+    Point operator *(long long k) const { // умножение вектора на число
+        return Point(x * k, y * k);
+    }
+    Point operator /(long long k) const { // деление вектора на число
+        return Point(x / k, y / k);
+    }
+    Point& operator +=(const Point& a) { // прибавление к вектору
+        return *this = *this + a;
+    }
+    Point& operator -=(const Point& a) { // вычитание из вектора
+        return *this = *this - a;
+    }
+    Point& operator *=(long long k) { // умножение вектора
+        return *this = *this * k;
+    }
+    Point& operator /=(long long k) { // деление вектора
+        return *this = *this / k;
+    }
+    bool operator <(const Point& a) const {
+        return y < a.y || (y == a.y && x < a.x);
+    }
+    bool operator >(const Point& a) const {
+        return a < *this;
+    }
+    bool operator ==(const Point& a) const {
+        return x == a.x && y == a.y;
+    }
+    bool operator <=(const Point& a) const {
+        return !(*this > a);
+    }
+    bool operator >=(const Point& a) const {
+        return !(*this < a);
+    }
+    bool operator !=(const Point& a) const {
+        return !(*this == a);
+    }
+    long long len2() const { // квадрат длины вектора
+        return x * x + y * y;
+    }
+    long long len() const { // длина вектора
+        return (long long) (sqrt(x * x + y * y));
+    }
+    Point normal() const { // перпендикуляр
+        return Point(-y, x);
+    }
+    Point unit() const { // нормальизовать
+        return *this / len();
+    }
+    Point& tounit() {
+        return *this = *this / len();
+    }
+    Point symmetry(const Point& a) const { // симметрично относительно точки a
+        return a + a - *this;
+    }
+    long double angle() const { // угол между вектором и Ox
+        return atan2(y, x);
+    }
+};
+
+istream &operator >>(istream& in, Point& a) {
+    in >> a.x;
+    in >> a.y;
+    return in;
+}
+
+ostream &operator <<(ostream& out, Point& a) {
+    out << a.x << " " << a.y;
+    return out;
+}
+
+Point middle(const Point& a, const Point& b) { // середина отрезка
+    return (a + b) / 2;
+}
+
+Point min(const Point& a, const Point& b) {
+    return (a < b ? a : b);
+}
+
+Point max(const Point& a, const Point& b) {
+    return (a > b ? a : b);
+}
+
+long long operator *(const Point &a, const Point &b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+long long operator %(const Point &a, const Point &b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+long long dist(const Point &a, const Point &b) { // дистанция между точками
+    return (a - b).len();
+}
+
+long long dist2(const Point &a, const Point &b) { // дистанция между точками в квадрате
+    return (a - b).len2();
+}
+
+bool in_triangle(const Point &a, const Point &b, const Point &c, const Point &p) { // проверка на принадлежность точки p треугольнику abc
+	return abs((a - p) * (b - p)) + abs((b - p) * (c - p)) + abs((c - p) * (a - p)) == abs((a - b) * (c - b));
+}
+
+long long S(const Point& a, const Point& b, const Point& c) { // площадь треугольника
+    return ((b - a) * (c - a)) / 2;
+}
+
+int id(const Point& a) { // четверть плоскости
+    if (a.x == 0 && a.y == 0) return 1;
+    if (a.x > 0 && a.y >= 0) return 1;
+    if (a.x <= 0 && a.y > 0) return 2;
+    if (a.x < 0 && a.y <= 0) return 3;
+    return 4;
+}
+
+bool cmp(const Point& a, const Point& b) {
+    if (id(a) != id(b)) return id(a) < id(b);
+    if (a * b == 0) return a.len2() < b.len2();
+    return a * b > 0;
+}
+
+bool cmp2(Point a, Point b, Point c) {
+    a -= c;
+    b -= c;
+    if (id(a) != id(b)) return id(a) < id(b);
+    if (a * b == 0) return a.len2() < b.len2();
+    return a * b > 0;
+}
+
+struct line{
+    long long a = 1, b = 0, c = 0;
+    line() {};
+    line(long long a, long long b, long long c) : a(a), b(b), c(c) {};
+    line(Point A, Point B) {
+        a = B.y - A.y;
+        b = A.x - B.x;
+        c = - (a * A.x + b * A.y);
+    };
+};
+
+bool isonline(const line l, const Point p) { // принадлежность точки прямой
+    return l.a * p.x + l.b * p.y + l.c == 0;
+}
+
+bool same_sign_equal(long long a, long long b) {
+    return (a >= 0 && b >= 0) || (a <= 0 && b <= 0);
+}
+
+bool inter(const Point& a, const Point& b, const Point& c, const Point& d) { // проверка на пересечение ab и cd
+    long long res1 = (b - a) * (c - a);
+    long long res2 = (b - a) * (d - a);
+    long long res3 = (d - c) * (a - c);
+    long long res4 = (d - c) * (b - c);
+    return !same_sign_equal(res1, res2) && !same_sign_equal(res3, res4);
+}
+
+vector<Point> obl(vector<Point> a) { // получие выпуклой оболочки
+    int n = a.size();
+    Point start = a[0];
+    for (int i = 0; i < n; i++) start = min(start, a[i]);
+    sort(a.begin(), a.end(), [&] (Point a, Point b) {
+         return cmp2(a, b, start); });
+    vector<Point> ch;
+    for (int i = 0; i < n; i++) {
+        while (ch.size() >= 2 && (ch.back() - ch[(int) ch.size() - 2]) * (a[i] - ch.back()) <= 0) {
+            ch.pop_back();
+        }
+        ch.push_back(a[i]);
+    }
+    return ch;
+}
+
+struct Polygon{ // многоугольник
+    int n;
+    vector<Point> p; // вершины многоугольника
+    vector<Point> v; // векторы из стартовой вершины во все остальные
+    Polygon() {}
+    Polygon(vector<Point>& a) {
+        p = obl(a);
+        n = p.size();
+        for (int i = 1; i < n; i++) {
+            v.push_back(p[i] - p[0]);
+        }
+    }
+    Polygon operator+(const Polygon& a) const { // сумма минковского
+        vector<Point> v;
+        int i = 0, j = 0;
+        while (i < n || j < a.n) {
+            if (j == a.n || (i < n && cmp(p[(i + 1) % n] - p[i], a.p[(j + 1) % a.n] - a.p[j]))) {
+                v.push_back(p[(i + 1) % n] - p[i]);
+                i++;
+            }
+            else {
+                v.push_back(a.p[(j + 1) % a.n] - a.p[j]);
+                j++;
+            }
+        }
+        vector<Point> res;
+        res.push_back(Point(0, 0));
+        for (int i = 0; i < (int) v.size() - 1; i++) {
+            res.push_back(Point(res.back().x + v[i].x, res.back().y + v[i].y));
+        }
+        const long long INF = 1e18;
+        Point min_Point1 = Point(INF, INF);
+        Point min_Point2 = Point(INF, INF);
+        Point min_Point_res = Point(INF, INF);
+        for (auto& c : p) {
+            min_Point1 = min(min_Point1, c);
+        }
+        for (auto& c : a.p) {
+            min_Point2 = min(min_Point2, c);
+        }
+        for (auto& c : res) {
+            min_Point_res = min(min_Point_res, c);
+        }
+        Point delta(min_Point1.x + min_Point2.x - min_Point_res.x, min_Point1.y + min_Point2.y - min_Point_res.y);
+        for (auto& c : res) {
+            c.x += delta.x;
+            c.y += delta.y;
+        }
+        return Polygon(res);
+    }
+    Polygon operator-(const Polygon& a) const { // разность минковского
+        vector<Point> now = a.p;
+        for (auto& c : now) {
+            c.x *= -1;
+            c.y *= -1;
+        }
+        return (*this) + Polygon(now);
+    }
+    bool is_inside(const Point &a) const { // проверка внутри ли точка выпуклого
+        Point v1 = a - p[0], v2 = a - p.back();
+        if (!same_sign_equal(v[0] * v1, v[0] * v.back()) || !same_sign_equal(v.back() * v2, v.back() * v[0])) {
+            return false;
+        }
+        int ind2 = upper_bound(v.begin(), v.end(), v1, cmp) - v.begin();
+        ind2++;
+        ind2 = min(ind2, n - 1);
+        int ind1 = ind2 - 1;
+        return in_triangle(p[0], p[ind1], p[ind2], a);;
+    }
+    bool inside(const Point& a) const { // проверка внутри ли точка невыпуклого
+        Point to(a.x + 1e9 + 7, a.y + 1e9 + 9);
+        int cnt = 0;
+        for (int i = 0; i < n; i++) {
+            if (inter(p[i], p[(i + 1) % n], a, to)) {
+                cnt++;
+            }
+        }
+        return cnt % 2 == 1;
+    }
+    long long S() { // плоащдь
+        Point beg(0, 0);
+        long long ans = 0;
+        for (int i = 0; i < n; i++) {
+            Point v1 = p[i] - beg, v2 = p[(i + 1) % n] - beg;
+            ans += (long long) (v1 * v2);
+        }
+        return abs(ans) / 2;
+    }
+};

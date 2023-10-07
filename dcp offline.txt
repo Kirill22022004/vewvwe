@@ -1,0 +1,122 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define eb emplace_back
+#define ld long double
+
+class dsu {
+ public :
+    vector<int> p, rang, t;
+    int n, comp, cur_time;
+    vector<pair<int, int>> changes;
+    dsu(int n) : n(n), comp(n), cur_time(0) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        rang.resize(n, 1);
+    }
+    int get(int x) {
+        return (x == p[x] ? x : get(p[x]));
+    }
+    bool unite(int x, int y) {
+        x = get(x);
+        y = get(y);
+        if (rang[x] < rang[y]) swap(x, y);
+        if (x != y) {
+            comp--;
+            changes.push_back({y, rang[x]});
+            cur_time++;
+            p[y] = x;
+            rang[x] += (rang[x] == rang[y]);
+            return true;
+        }
+        return false;
+    }
+    void save() {
+        t.push_back(cur_time);
+    }
+    void rollback() {
+        int k = t.back();
+        t.pop_back();
+        while ((int) changes.size() > k) {
+            int x = changes.back().first, z = changes.back().second;
+            rang[p[x]] = z;
+            p[x] = x;
+            comp++;
+            changes.pop_back();
+            cur_time--;
+        }
+    }
+};
+
+vector<int> ans;
+vector<vector<pii>> t;
+
+void update(int v, int l, int r, int l1, int r1, pii x) {
+    if (l1 >= r || l >= r1) return;
+    if (l1 <= l && r <= r1) {
+        t[v].pb(x);
+        return;
+    }
+    int m = (l + r) / 2;
+    update(v * 2 + 1, l, m, l1,  r1, x);
+    update(v * 2 + 2, m, r, l1, r1, x);
+}
+
+void dfs(int v, int l, int r, dsu& g) {
+    g.save();
+    for (auto el : t[v]) {
+        g.unite(el.fi, el.se);
+    }
+    if (l + 1 == r) {
+        if (ans[l] != -1) ans[l] = g.comp;
+    } else {
+        int m = (l + r) / 2;
+        dfs(v * 2 + 1, l, m, g);
+        dfs(v * 2 + 2, m, r, g);
+    }
+    g.rollback();
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, k;
+    cin >> n >> k;
+    if (k == 0) return 0;
+    t.resize(4 * k);
+    dsu g(n);
+    ans.resize(k, -1);
+    map<pii, int> tin;
+    for (int i = 0; i < k; i++) {
+        char c;
+        cin >> c;
+        if (c == '?') ans[i] = 0;
+        if (c == '+') {
+            int x, y;
+            cin >> x >> y;
+            x--, y--;
+            tin[{min(x, y), max(x, y)}] = i;
+        }
+        if (c == '-') {
+            int x, y;
+            cin >> x >> y;
+            x--, y--;
+            update(0, 0, k, tin[{min(x, y), max(x, y)}], i + 1, {min(x, y), max(x, y)});
+            tin.erase({min(x, y), max(x, y)});
+        }
+    }
+    for (auto el : tin) {
+        update(0, 0, k, el.se, k, el.fi);
+    }
+    dfs(0, 0, k, g);
+    for (auto x : ans) if (x != -1) cout << x << '\n';
+}

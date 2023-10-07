@@ -1,0 +1,355 @@
+struct node {
+    int id;
+    node* l;
+    node* r;
+    node* p;
+    bool rev;
+    int sz;
+    // extra values
+
+    node(int id) : id(id), l(nullptr), r(nullptr), p(nullptr), sz(1) {}
+
+    void do_reverse() {
+        rev ^= 1;
+        swap(l, r);
+        pull();
+    }
+
+    void do_push() {
+        // change value
+    }
+
+    void push() {
+        if (rev) {
+            if (l) l->do_reverse();
+            if (r) r->do_reverse();
+        }
+        rev = 0;
+        // do_push ?
+    }
+    void pull() {
+        sz = 1;
+        if (l) {
+            l->p = this;
+            sz += l->sz;
+        }
+        if (r) {
+            r->p = this;
+            sz += r->sz;
+        }
+    }
+};
+
+using pnode = node*;
+
+void debug(pnode v, string pref = "") {
+    if (v) {
+        v->push();
+        debug(v->r, pref + " ");
+        cerr << pref << "- " << v->id << endl;
+        debug(v->l, pref + " ");
+    } else {
+        cerr << pref << "- NULL" << endl;
+    }
+}
+
+void debug_array(pnode v, bool f = true) {
+    if (v) {
+        v->push();
+        debug_array(v->l, false);
+        cerr << v->id << " ";
+        debug_array(v->r, false);
+    }
+    if (f) cerr << endl;
+}
+
+namespace splay_tree {
+    bool is_root(pnode v) {
+        if (!v) return false;
+        return (v->p == nullptr || (v->p->l != v && v->p->r != v));
+    }
+
+    void rotate(pnode v) {
+        pnode u = v->p;
+        u->push();
+        v->push();
+        if (v == u->l) {
+            u->l = v->r;
+            v->r = u;
+        } else {
+            u->r = v->l;
+            v->l = u;
+        }
+        v->p = u->p;
+        if (v->p) {
+            if (v->p->l == u) v->p->l = v;
+            if (v->p->r == u) v->p->r = v;
+        }
+        u->pull();
+        v->pull();
+    }
+
+    void splay(pnode v) {
+        if (!v) return;
+        while (!is_root(v)) {
+            pnode u = v->p;
+            if (!is_root(u)) {
+                if ((u->l == v) ^ (u->p->l == u)) {
+                    rotate(v);
+                } else {
+                    rotate(u);
+                }
+            }
+            rotate(v);
+        }
+    }
+
+    int get_position(pnode v) {
+        splay(v);
+        return (v->l ? v->l->sz : 0);
+    }
+
+    int get_size(pnode v) {
+        splay(v);
+        return (v ? v->sz : 0);
+    }
+
+    pair<pnode, int> find(pnode v, const function<int(pnode)>& go) {
+        // go : 0 -- found; -1 -- go left; 1 -- go right
+        if (!v) return {nullptr, 0};
+        splay(v);
+        int type;
+        while (true) {
+            v->push();
+            type = go(v);
+            if (type == 0) break;
+            pnode u = (type == -1 ? v->l : v->r);
+            if (!u) break;
+            v = u;
+        }
+        splay(v);
+        return {v, type};
+    }
+
+    pnode get_leftmost(pnode v) {
+        return find(v, [&] (pnode) { return -1; }).first;
+    }
+
+    pnode get_rightmost(pnode v) {
+        return find(v, [&] (pnode) { return 1; }).first;
+    }
+
+    pnode get_kht(pnode v, int k) {
+        pair<pnode, int> res = find(v, [&] (pnode u) {
+            if (u->l) {
+                if (u->l->sz > k) return -1;
+                k -= u->l->sz;
+            }
+            if (k == 0) return 0;
+            k--;
+            return 1;
+        });
+        return (res.second == 0 ? res.first : nullptr);
+    }
+
+    pair<pnode, pnode> split(pnode v, const function<bool(pnode)>& is_right) {
+        if (!v) return {nullptr, nullptr};
+        pair<pnode, int> res = find(v, [&] (pnode u) { return (is_right(u) ? -1 : 1); });
+        v = res.first;
+        v->push();
+        if (res.second == -1) {
+            pnode u = v->l;
+            if (!u) return {nullptr, v};
+            v->l = nullptr;
+            u->p = v->p;
+            u = get_rightmost(u);
+            v->p = u;
+            v->pull();
+            return {u, v};
+        } else {
+            pnode u = v->r;
+            if (!u) return {v, nullptr};
+            v->r = nullptr;
+            v->pull();
+            return {v, u};
+        }
+    }
+
+    pair<pnode, pnode> split_leftmost_k(pnode v, int k) {
+        return split(v, [&] (pnode u) {
+            int sz = (u->l ? u->l->sz : 0) + 1;
+            if (k >= sz) {
+                k -= sz;
+                return false;
+            }
+            return true;
+        });
+    }
+
+    pnode merge(pnode v, pnode u) {
+        if (!v) return u;
+        if (!u) return v;
+        v = get_rightmost(v);
+        v->push();
+        splay(u);
+        v->r = u;
+        v->pull();
+        return v;
+    }
+
+    pnode add(pnode root, pnode v, const function<bool(pnode)>& go) {
+        pair<pnode, pnode> res = split(root, go);
+        return merge(res.first, merge(v, res.second));
+    }
+
+    pnode remove(pnode v) {
+        splay(v);
+        v->push();
+        pnode x = v->l;
+        pnode y = v->r;
+        v->l = v->r = nullptr;
+        pnode z = merge(x, y);
+        if (z) z->p = v->p;
+        v->p = nullptr;
+        v->push();
+        v->pull();
+        return z;
+    }
+
+    pnode next(pnode v) {
+        splay(v);
+        v->push();
+        if (!v->r) return nullptr;
+        v = v->r;
+        while (v->l) {
+            v->push();
+            v = v->l;
+        }
+        splay(v);
+        return v;
+    }
+
+    pnode prev(pnode v) {
+        splay(v);
+        v->push();
+        if (!v->l) return nullptr;
+        v = v->l;
+        while (v->r) {
+            v->push();
+            v = v->r;
+        }
+        splay(v);
+        return v;
+    }
+
+    void reverse(pnode v) {
+        splay(v);
+        v->do_reverse();
+    }
+} // namespace splay_tree
+
+using namespace splay_tree;
+
+class link_cut_tree {
+ public:
+     int n;
+     vector<pnode> nodes;
+
+     link_cut_tree(int n) : n(n) {
+         nodes.resize(n);
+         for (int i = 0; i < n; i++) {
+            nodes[i] = new node(i);
+         }
+     }
+
+     int add_node() {
+         int id = (int) nodes.size();
+         nodes.push_back(new node(id));
+         return id;
+     }
+
+     void expose(pnode v, bool do_cut = false) {
+         pnode r = nullptr;
+         pnode tmp = v;
+         while (tmp) {
+            splay(tmp);
+            if (r || do_cut) {
+                tmp->push();
+                tmp->r = r;
+                tmp->pull();
+            }
+            r = tmp;
+            tmp = tmp->p;
+         }
+         splay(v);
+     }
+
+     int get_root(int i) {
+         pnode v = nodes[i];
+         expose(v);
+         return get_leftmost(v)->id;
+     }
+
+     bool link(int i, int j) {
+         if (i == j) return false;
+         pnode v = nodes[i];
+         pnode u = nodes[j];
+         make_root(i);
+         expose(u);
+         if (v->p) return false;
+         v->p = u;
+         return true;
+     }
+
+     bool cut(int i, int j) {
+         if (i == j) return false;
+         pnode u = nodes[j];
+         make_root(i);
+         expose(u);
+         u->push();
+         if (u->l && u->l->sz == 1) {
+            u->l->p = nullptr;
+            u->l = nullptr;
+            return true;
+         }
+         return false;
+     }
+
+     bool connected(int i, int j) {
+         if (i == j) return true;
+         pnode v = nodes[i];
+         pnode u = nodes[j];
+         expose(v);
+         expose(u);
+         return v->p != nullptr;
+     }
+
+     int lca(int i, int j) {
+         if (i == j) return i;
+         pnode v = nodes[i];
+         pnode u = nodes[j];
+         expose(v);
+         expose(u);
+         if (!v->p) return -1;
+         splay(v);
+         if (!v->p) return v->id;
+         return v->p->id;
+     }
+
+     void make_root(int i) {
+         pnode v = nodes[i];
+         expose(v, true);
+         reverse(v);
+     }
+
+     pnode get_path_from_root(int i) {
+         pnode v = nodes[i];
+         expose(v, true);
+         return v;
+     }
+
+     pnode get_path(int i, int j) {
+         make_root(j);
+         return get_path_from_root(i);
+     }
+};

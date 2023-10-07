@@ -1,0 +1,158 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define eb emplace_back
+#define ld long double
+
+const int mod = 1e9 + 7;
+
+vector<int> t, d, a;
+
+void build(int v, int l, int r) {
+    if (l + 1 == r) {
+        t[v] = a[l];
+        return;
+    }
+    int m = (l + r) / 2;
+    build(v * 2 + 1, l, m);
+    build(v * 2 + 2, m, r);
+    t[v] = (t[v * 2 + 1] + t[v * 2 + 2]) % mod;
+}
+
+void push(int v, int l, int r) {
+    if (l + 1 == r) {
+        t[v] += d[v];
+        d[v] = 0;
+        return;
+    }
+    t[v] = (t[v] + (d[v] * (r - l)) % mod) % mod;
+    d[v * 2 + 1] += d[v];
+    d[v * 2 + 2] += d[v];
+    d[v] = 0;
+}
+
+void update(int v, int l, int r, int l1, int r1, int x) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) return;
+    if (l1 <= l && r <= r1) {
+        d[v] += x;
+        push(v, l, r);
+        return;
+    }
+    int m = (l + r) / 2;
+    update(v * 2 + 1, l, m, l1, r1, x);
+    update(v * 2 + 2, m, r, l1, r1, x);
+    t[v] = (t[v * 2 + 1] + t[v * 2 + 2]) % mod;
+}
+
+int get(int v, int l, int r, int i) {
+    push(v, l, r);
+    if (l + 1 == r) return t[v];
+    int m = (l + r) / 2;
+    if (i < m) return get(v * 2 + 1, l, m, i);
+    return get(v * 2 + 2, m, r, i);
+}
+
+int get(int v, int l, int r, int l1, int r1) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) return 0;
+    if (l1 <= l && r <= r1) return t[v] % mod;
+    int m = (l + r) / 2;
+    return (get(v * 2 + 1, l, m, l1, r1) + get(v * 2 + 2, m, r, l1, r1)) % mod;
+}
+
+vector<vector<int>> g;
+vector<int> ID, pr, first, sz, h;
+int T = 0;
+
+void get_sz(int v, int p) {
+    sz[v] = 1;
+    for (auto x : g[v]) {
+        if (x != p) {
+            get_sz(x, v);
+            sz[v] += sz[x];
+        }
+    }
+}
+
+void dfs(int v, int p, int k, int d) {
+    ID[v] = T++;
+    h[ID[v]] = d;
+    first[ID[v]] = ID[k];
+    if (p != -1) {
+        pr[ID[v]] = ID[p];
+    }
+    int j = -1;
+    for (auto x : g[v]) {
+        if (x != p) {
+            if (j == -1 || sz[x] > sz[j]) j = x;
+        }
+    }
+    if (j != -1) {
+        dfs(j, v, k, d + 1);
+    }
+    for (auto x : g[v]) {
+        if (x != p && x != j) {
+            dfs(x, v, x, d + 1);
+        }
+    }
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, m;
+    cin >> n >> m;
+    g.resize(n);
+    ID.resize(n);
+    pr.resize(n, -1);
+    first.resize(n);
+    sz.resize(n);
+    h.resize(n);
+    for (int i = 1; i < n; i++) {
+        int x;
+        cin >> x;
+        g[x].pb(i);
+        g[i].pb(x);
+    }
+    get_sz(0, -1);
+    dfs(0, -1, 0, 0);
+    vector<int> c(n);
+    for (int i = 0; i < n; i++) {
+        cin >> c[i];
+    }
+    a.resize(n);
+    for (int i = 0; i < n; i++) {
+        a[ID[i]] = c[i];
+    }
+    t.resize(4 * n);
+    d.resize(4 * n);
+    build(0, 0, n);
+    cout << get(0, 0, n, ID[n - 1]) << " ";
+    while (m--) {
+        int x, y;
+        cin >> x >> y;
+        int res = get(0, 0, n, ID[x] + 1, ID[x] + sz[x]);
+        x = ID[x];
+        while (x != -1) {
+            res = (res + get(0, 0, n, first[x], x + 1)) % mod;
+            x = pr[first[x]];
+        }
+        update(0, 0, n, ID[y] + 1, ID[y] + sz[y], res);
+        y = ID[y];
+        while (y != -1) {
+            update(0, 0, n, first[y], y + 1, res);
+            y = pr[first[y]];
+        }
+        cout << get(0, 0, n, ID[n - 1]) << " ";
+    }
+}

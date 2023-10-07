@@ -1,0 +1,210 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define sz(x) (int) (x).size()
+
+const int N = 1000022;
+vector<int> ga[N], gb[N], gc[N];
+vector<int> ts, tmp = {0}, tmp2;
+vector<pair<int, int>> dp[N];
+vector<int> st;
+int dist[N], tin[N], tout[N], sz[N], root[N], value[N], parent[N], siz[N], ind[N], ind2[N];
+int n, ans = 2 * N, ansv, ansu, t = 0, start;
+
+vector<int> lg;
+vector<vector<int>> ST;
+
+int f(int x, int y) { return (dist[x] < dist[y] ? x : y); }
+
+int lca(int x, int y) {
+    int l = min(tin[x], tin[y]), r = max(tin[x], tin[y]);
+    int LG = lg[r - l + 1];
+    return f(ST[LG][l], ST[LG][r - (1 << LG) + 1]);
+}
+
+void dfs(int v) {
+    tin[v] = (int) st.size();
+    ts.push_back(v);
+    st.push_back(v);
+    for (auto x : gb[v]) {
+        if (dist[x] == -1) {
+            dist[x] = dist[v] + 1;
+            dfs(x);
+            st.push_back(v);
+        }
+    }
+    tout[v] = (int) st.size();
+}
+
+void updans(int x, int y, int c) {
+    int res = dist[x] + dist[y] + value[x] + value[y] + c;
+    if (res < ans) {
+        ans = res, ansv = x, ansu = y;
+    }
+}
+
+void upd(int& x, int y) {
+    if (dist[x] + value[x] > dist[y] + value[y]) {
+        x = y;
+    }
+}
+
+void get_size(int v, int pr) {
+    siz[v] = 1;
+    for (int x : ga[v]) {
+        if (x != pr) {
+            get_size(x, v);
+            siz[v] += siz[x];
+        }
+    }
+}
+
+void flex(int v, int pr) {
+    ind2[t] = v;
+    ind[v] = t++;
+    sort(ga[v].begin(), ga[v].end(), [&] (int x, int y) { return siz[x] > siz[y]; });
+    for (int x : ga[v]) {
+        if (x != pr) {
+            flex(x, v);
+        }
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    cin >> n;
+    for (int i = 1; i < n; i++) {
+        int p;
+        cin >> p;
+        p--;
+        ga[p].push_back(i);
+        ga[i].push_back(p);
+    }
+    for (int i = 1; i < n; i++) {
+        int p;
+        cin >> p;
+        p--;
+        gb[p].push_back(i);
+        gb[i].push_back(p);
+    };
+    get_size(0, -1);
+    flex(0, -1);
+    for (int v = 0; v < n; v++) {
+        for (int x : ga[v]) {
+            gc[ind[v]].push_back(ind[x]);
+        }
+    }
+    for (int v = 0; v < n; v++) {
+        ga[v] = gc[v];
+    }
+    fill(dist, dist + n, -1);
+    dist[0] = 0;
+    dfs(0);
+    int m = (int) st.size();
+    lg.resize(m + 1);
+    for (int i = 2; i <= m; i++) {
+        lg[i] = lg[i / 2] + 1;
+    }
+    int maxlg = lg[m] + 1;
+    ST.resize(maxlg);
+    ST[0].resize(m);
+    for (int i = 0; i < m; i++) {
+        ST[0][i] = st[i];
+    }
+    for (int i = 1; i < maxlg; i++) {
+        ST[i].resize(m - (1 << i) + 1);
+        for (int j = 0; j < m - (1 << i) + 1; j++) {
+            ST[i][j] = f(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+        }
+    }
+    while ((int) tmp.size()) {
+        for (auto& v : tmp) {
+            parent[v] = -1;
+            start = 0;
+            st[start++] = v;
+            for (int i = 0; i < start; i++) {
+                for (int x : ga[st[i]]) {
+                    if (x != parent[st[i]]) {
+                        st[start++] = x;
+                        parent[x] = st[i];
+                    }
+                }
+            }
+            int u = -1;
+            for (int i = start - 1; i >= 0; i--) {
+                sz[st[i]] = 1;
+                for (int x : ga[st[i]]) {
+                    if (x != parent[st[i]]) {
+                        sz[st[i]] += sz[x];
+                    }
+                }
+                if (sz[st[i]] >= (start + 1) / 2) {
+                    u = st[i];
+                    break;
+                }
+            }
+            v = u;
+            parent[v] = -1;
+            value[ind2[v]] = 0;
+            start = 0;
+            st[start++] = v;
+            for (int i = 0; i < start; i++) {
+                root[ind2[st[i]]] = v;
+                for (int x : ga[st[i]]) {
+                    if (x != parent[st[i]]) {
+                        st[start++] = x;
+                        parent[x] = st[i];
+                        value[ind2[x]] = value[ind2[st[i]]] + 1;
+                    }
+                }
+            }
+        }
+        for (auto v : ts) {
+            if (root[v] == -1 || value[v] >= ans) {
+                continue;
+            }
+            int u = root[v], LCA = -1;
+            if (sz(dp[u])) {
+                LCA = lca(v, dp[u].back().first);
+            }
+            while (sz(dp[u])) {
+                int m = sz(dp[u]);
+                if (dist[LCA] >= dist[dp[u][m - 1].first]) {
+                    break;
+                }
+                if (m >= 2 && dist[LCA] <= dist[dp[u][m - 2].first]) {
+                    updans(dp[u][m - 1].second, dp[u][m - 2].second, -2 * dist[dp[u][m - 2].first]);
+                    upd(dp[u][m - 2].second, dp[u][m - 1].second);
+                    dp[u].pop_back();
+                    continue;
+                }
+                dp[u].back().first = LCA;
+                break;
+            }
+            dp[u].push_back({v, v});
+        }
+        for (auto v : tmp) {
+            while (sz(dp[v]) >= 2) {
+                updans(dp[v][sz(dp[v]) - 1].second, dp[v][sz(dp[v]) - 2].second, -2 * dist[dp[v][sz(dp[v]) - 2].first]);
+                upd(dp[v][sz(dp[v]) - 2].second, dp[v][sz(dp[v]) - 1].second);
+                dp[v].pop_back();
+            }
+        }
+        tmp2 = {};
+        for (auto v : tmp) {
+            root[v] = -1;
+            for (auto x : ga[v]) {
+                tmp2.push_back(x);
+                int i = 0;
+                while (ga[x][i] != v) i++;
+                swap(ga[x][i], ga[x].back());
+                ga[x].pop_back();
+            }
+        }
+        tmp = tmp2;
+    }
+    cout << ans << '\n' << ansv + 1 << " " << ansu + 1 << '\n';
+}

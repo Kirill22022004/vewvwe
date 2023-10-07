@@ -1,0 +1,52 @@
+const int mod = 998244353, G = 31, G1 = 128805723, K = 23;
+
+int binpow(int x, int n) {
+    int res = 1;
+    while (n) {
+        if (n & 1) res = (res * 1ll * x) % mod;
+        x = (x * 1ll * x) % mod;
+        n >>= 1;
+    }
+    return res;
+}
+
+void fft(vector<int>& a, bool inv) {
+    int n = a.size(), k = 0;
+    while ((1 << k) < n) k++;
+    for (int i = 0; i < n; i++) {
+        int j = 0;
+        for (int l = 0; l < k; l++) {
+            j |= (((i >> l) & 1) << (k - l - 1));
+        }
+        if (j < i) swap(a[j], a[i]);
+    }
+    for (int l = 1, pw = 0; l < n; l *= 2, pw++) {
+        int g = binpow(inv ? G1 : G, 1 << (K - pw - 1));
+        for (int i = 0; i < n; i += 2 * l) {
+            int c = 1;
+            for (int j = i; j < i + l; j++) {
+                int x = a[j], y = (a[j + l] * 1ll * c) % mod;
+                a[j] = (x + y) % mod;
+                a[j + l] = (x - y + mod) % mod;
+                c  = (c * 1ll * g) % mod;
+            }
+        }
+    }
+    int d = binpow(n, mod - 2);
+    if (inv) {
+        for (auto& x : a) x = (x * 1ll * d) % mod;
+    }
+}
+
+vector<int> mul(const vector<int>& ma, const vector<int>& mb) {
+    int n = 1;
+    while (n < (int) ma.size() + mb.size()) n *= 2;
+    vector<int> a(n), b(n);
+    for (int i = 0; i < (int) ma.size(); i++) a[i] = ma[i];
+    for (int i = 0; i < (int) mb.size(); i++) b[i] = mb[i];
+    fft(a, false);
+    fft(b, false);
+    for (int i = 0; i < n; i++) a[i] = (a[i] * 1ll * b[i]) % mod;
+    fft(a, true);
+    return a;
+}

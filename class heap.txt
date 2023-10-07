@@ -1,0 +1,83 @@
+class heap {
+
+private :
+    int n;
+    vector<int> a;
+    int up(int x) {
+        if (x >= n || x < 0) {
+            return -1;
+        }
+        while (x > 0 && a[x] > a[(x - 1) / 2]) {
+            std::swap(a[x], a[(x - 1) / 2]);
+            x = (x - 1) / 2;
+        }
+        return x;
+    }
+    int down(int x) {
+        if (x >= n || x < 0) {
+            return -1;
+        }
+        while (x < n) {
+            int new_x = -1;
+            if (x * 2 + 1 < n) {
+                new_x = x * 2 + 1;
+            }
+            if (x * 2 + 2 < n && a[x * 2 + 2] > a[new_x]) {
+                    new_x = x * 2 + 2;
+            }
+            if (new_x == -1 || a[new_x] <= a[x]) break;
+            std::swap(a[x], a[new_x]);
+            x = new_x;
+        }
+        return x;
+    }
+
+public :
+    heap() : n(0) {};
+    void push(int x) {
+        a.push_back(x);
+        n++;
+        up(n - 1);
+    }
+    inline int top() {
+        if (n == 0) {
+            return -1;
+        }
+        return a[0];
+    }
+    int pop() {
+        int res = a[0];
+        std::swap(a[0], a[n - 1]);
+        n--;
+        a.pop_back();
+        down(0);
+        return res;
+    }
+    void swap(heap &b) {
+        a.swap(b.a);
+        std::swap(n, b.n);
+    }
+    inline int size() {
+        return n;
+    }
+    inline bool empty() {
+        if (n == 0) return true;
+        return false;
+    }
+    void erase(int i) {
+        if (i >= n || i < 0) {
+            return;
+        }
+        std::swap(a[i], a[n - 1]);
+        n--;
+        a.pop_back();
+        up(i);
+        down(i);
+    }
+    void print() {
+        for (int i = 0; i < n; i++) {
+            cout << a[i] << " ";
+        }
+        cout << endl;
+    }
+};

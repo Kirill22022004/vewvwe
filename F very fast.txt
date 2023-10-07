@@ -1,0 +1,248 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+const int N = 300, K = 9;
+int n, m, k, a[N][N], sum_row[N], sum_column[N], value[N][N], banx[N], bany[N], used[N][N], sumx[N], sumy[N], lg[N + 1];
+long long sum = 0, ans = 0, tmp = 0;
+vector<pair<int, int>> answer;
+
+pair<int, int> dp2[K][K][N][N];
+
+pair<int, int> f(pair<int, int> x, pair<int, int> y) {
+    if (value[x.first][x.second] >= value[y.first][y.second]) {
+        return x;
+    }
+    return y;
+}
+
+pair<int, int> get2(int x, int y, int x2, int y2) {
+    int lgn = lg[x2 - x + 1];
+    int lgm = lg[y2 - y + 1];
+    pair<int, int> res = f(dp2[lgn][lgm][x][y], dp2[lgn][lgm][x2 - (1 << lgn) + 1][y2 - (1 << lgm) + 1]);
+    pair<int, int> res2 = f(dp2[lgn][lgm][x][y2 - (1 << lgm) + 1] , dp2[lgn][lgm][x2 - (1 << lgn) + 1][y]);
+    return f(res, res2);
+}
+
+int f(int i, int j) {
+    return value[i][j] - banx[i] * a[i][j] - bany[j] * a[i][j] - sumx[i] - sumy[j];
+}
+
+vector<int> XX, YY, dp;
+
+void gen(int k) {
+    if (k == 0) {
+        ans = max(ans, tmp + sum);
+        return;
+    }
+    int x = -1, y = -1;
+    XX = {-1}, YY = {-1};
+    for (int i = 0; i < n; i++) {
+        if (banx[i]) {
+            XX.push_back(i);
+        }
+    }
+    for (int j = 0; j < m; j++) {
+        if (bany[j]) {
+            YY.push_back(j);
+        }
+    }
+    XX.push_back(n);
+    YY.push_back(m);
+    for (int i = 1; i < (int) XX.size(); i++) {
+        if (XX[i] - XX[i - 1] == 1) {
+            continue;
+        }
+        for (int j = 1; j < (int) YY.size(); j++) {
+            if (YY[j] - YY[j - 1] == 1) {
+                continue;
+            }
+            pair<int, int> kek = get2(XX[i - 1] + 1, YY[j - 1] + 1, XX[i] - 1, YY[j] - 1);
+            if (!used[kek.first][kek.second] && (x == -1 || f(x, y) < f(kek.first, kek.second))) {
+                x = kek.first, y = kek.second;
+            }
+        }
+    }
+    for (int i = 1; i + 1 < (int) XX.size(); i++) {
+        for (int j = 1; j + 1 < (int) YY.size(); j++) {
+            pair<int, int> kek = {XX[i], YY[j]};
+            if (!used[kek.first][kek.second] && (x == -1 || f(x, y) < f(kek.first, kek.second))) {
+                x = kek.first, y = kek.second;
+            }
+        }
+    }
+    for (int i = 1; i + 1 < (int) XX.size(); i++) {
+        for (int j = 1; j < (int) YY.size(); j++) {
+            if (YY[j] - YY[j - 1] == 1) {
+                continue;
+            }
+            pair<int, int> kek = get2(XX[i], YY[j - 1] + 1, XX[i], YY[j] - 1);
+            if (!used[kek.first][kek.second] && (x == -1 || f(x, y) < f(kek.first, kek.second))) {
+                x = kek.first, y = kek.second;
+            }
+        }
+    }
+    for (int j = 1; j + 1 < (int) YY.size(); j++) {
+        for (int i = 1; i < (int) XX.size(); i++) {
+            if (XX[i] - XX[i - 1] == 1) {
+                continue;
+            }
+            pair<int, int> kek = get2(XX[i - 1] + 1, YY[j], XX[i] - 1, YY[j]);
+            if (!used[kek.first][kek.second] && (x == -1 || f(x, y) < f(kek.first, kek.second))) {
+                x = kek.first, y = kek.second;
+            }
+        }
+    }
+    if (k == 1) {
+        tmp += f(x, y);
+        gen(k - 1);
+        tmp -= f(x, y);
+        return;
+    }
+    for (int c = 1; c <= k; c++) {
+        vector<int> dp;
+        for (int j = 0; j < m; j++) {
+            if (!used[x][j]) {
+                dp.push_back(j);
+                for (int id = (int) dp.size() - 1; id > 0; id--) {
+                    if (f(x, dp[id]) - (c - 1) * a[x][dp[id]] > f(x, dp[id - 1]) - (c - 1) * a[x][dp[id - 1]]) {
+                        swap(dp[id], dp[id - 1]);
+                    } else {
+                        break;
+                    }
+                }
+                if ((int) dp.size() > k) {
+                    dp.pop_back();
+                }
+            }
+        }
+        if ((int) dp.size() < c) {
+            break;
+        }
+        int l = (int) dp.size();
+        int choose = 0;
+        function<void(int)> dfs = [&] (int id) {
+             if (choose == c) {
+                 gen(k - c);
+                 return;
+             }
+             if (id == l) {
+                 return;
+             }
+             dfs(id + 1);
+             int i = x, j = dp[id];
+             tmp += f(i, j);
+             choose++;
+             used[i][j] = 1;
+             banx[i]++, bany[j]++;
+             sumx[i] += a[i][j], sumy[j] += a[i][j];
+             dfs(id + 1);
+             choose--;
+             used[i][j] = 0;
+             banx[i]--, bany[j]--;
+             sumx[i] -= a[i][j], sumy[j] -= a[i][j];
+             tmp -= f(i, j);
+        };
+        dfs(0);
+    }
+    for (int c = 1; c <= k; c++) {
+        vector<int> dp;
+        for (int i = 0; i < n; i++) {
+            if (!used[i][y]) {
+                dp.push_back(i);
+                for (int id = (int) dp.size() - 1; id > 0; id--) {
+                    if (f(dp[id], y) - (c - 1) * a[dp[id]][y] > f(dp[id - 1], y) - (c - 1) * a[dp[id - 1]][y]) {
+                        swap(dp[id], dp[id - 1]);
+                    } else {
+                        break;
+                    }
+                }
+                if ((int) dp.size() > k) {
+                    dp.pop_back();
+                }
+            }
+        }
+        if ((int) dp.size() < c) {
+            break;
+        }
+        int l = (int) dp.size();
+        int choose = 0;
+        function<void(int)> dfs = [&] (int id) {
+             if (choose == c) {
+                 gen(k - c);
+                 return;
+             }
+             if (id == l) {
+                 return;
+             }
+             dfs(id + 1);
+             int i = dp[id], j = y;
+             tmp += f(i, j);
+             choose++;
+             used[i][j] = 1;
+             banx[i]++, bany[j]++;
+             sumx[i] += a[i][j], sumy[j] += a[i][j];
+             dfs(id + 1);
+             choose--;
+             used[i][j] = 0;
+             banx[i]--, bany[j]--;
+             sumx[i] -= a[i][j], sumy[j] -= a[i][j];
+             tmp -= f(i, j);
+        };
+        dfs(0);
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    cin >> n >> m >> k;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            cin >> a[i][j];
+            sum += a[i][j];
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            sum_row[i] += a[i][j];
+            sum_column[j] += a[i][j];
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            value[i][j] = sum_row[i] + sum_column[j] - 3 * a[i][j];
+        }
+    }
+    for (int i = 2; i <= N; i++) {
+        lg[i] = lg[i / 2] + 1;
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            dp2[0][0][i][j] = {i, j};
+        }
+    }
+    for (int a = 0; a < K; a++) {
+        for (int b = 0; b < K; b++) {
+            if (a == 0 && b == 0) {
+                continue;
+            }
+            if (a > 0) {
+                for (int i = 0; i + (1 << a) - 1 < n; i++) {
+                    for (int j = 0; j + (1 << b) - 1 < m; j++) {
+                        dp2[a][b][i][j] = f(dp2[a - 1][b][i][j], dp2[a - 1][b][i + (1 << (a - 1))][j]);
+                    }
+                }
+            } else {
+                for (int i = 0; i + (1 << a) - 1 < n; i++) {
+                    for (int j = 0; j + (1 << b) - 1 < m; j++) {
+                        dp2[a][b][i][j] = f(dp2[a][b - 1][i][j], dp2[a][b - 1][i][j + (1 << (b - 1))]);
+                    }
+                }
+            }
+        }
+    }
+    gen(k);
+    cout << ans;
+}

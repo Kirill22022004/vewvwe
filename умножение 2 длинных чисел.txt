@@ -1,0 +1,79 @@
+#define cint complex<long double>
+const long double PI = atan2(0, -1);
+
+void fft(vector<cint>& a, bool inv) {
+    int n = a.size(), k = 0;
+    while ((1 << k) < n) k++;
+    for (int i = 0; i < n; i++) {
+        int j = 0;
+        for (int l = 0; l < k; l++) {
+            j |= (((i >> l) & 1) << (k - l - 1));
+        }
+        if (j < i) swap(a[j], a[i]);
+    }
+    for (int l = 1; l < n; l *= 2) {
+        long double angle = (inv ? -1 : 1) * PI / l;
+        cint g(cos(angle), sin(angle));
+        for (int i = 0; i < n; i += 2 * l) {
+            cint c(1, 0);
+            for (int j = i; j < i + l; j++) {
+                cint x = a[j], y = a[j + l] * c;
+                a[j] = x + y;
+                a[j + l] = x - y;
+                c *= g;
+            }
+        }
+    }
+    if (inv) {
+        for (auto& x : a) x /= n;
+    }
+}
+
+vector<int> mul(const vector<int>& ma, const vector<int>& mb) {
+    int n = 1;
+    while (n < (int) ma.size() + mb.size()) n *= 2;
+    vector<cint> a(n), b(n);
+    for (int i = 0; i < (int) ma.size(); i++) a[i] = ma[i];
+    for (int i = 0; i < (int) mb.size(); i++) b[i] = mb[i];
+    fft(a, false);
+    fft(b, false);
+    for (int i = 0; i < n; i++) a[i] *= b[i];
+    fft(a, true);
+    vector<int> c(n);
+    for (int i = 0; i < n; i++) {
+        c[i] = round(a[i].real());
+    }
+    return c;
+}
+
+string mul(string A, string B) {
+    int cnt = 0;
+    if (A[0] == '-') {
+        cnt++, A = A.substr(1, (int) A.size() - 1);
+    }
+    if (B[0] == '-') {
+        cnt++, B = B.substr(1, (int) B.size() - 1);
+    }
+    reverse(A.begin(), A.end());
+    reverse(B.begin(), B.end());
+    vector<int> a, b;
+    for (auto c : A) a.push_back(c - '0');
+    for (auto c : B) b.push_back(c - '0');
+    vector<int> res = mul(a, b);
+    while (res.size() > 1 && res.back() == 0) res.pop_back();
+    int tmp = 0;
+    for (int i = 0; i < (int) res.size() || tmp > 0; i++) {
+        if (i < res.size()) {
+            tmp += res[i];
+            res[i] = tmp % 10;
+        } else {
+            res.push_back(tmp % 10);
+        }
+        tmp /= 10;
+    }
+    string ans = "";
+    for (auto x : res) ans += (char) '0' + x;
+    reverse(ans.begin(), ans.end());
+    if (cnt % 2 == 1 && ans != "0") ans = "-" + ans;
+    return ans;
+}

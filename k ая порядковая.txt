@@ -1,0 +1,103 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define pii pair<int, int>
+#define fi first
+#define se second
+#define all(a) a.begin(), a.end()
+
+struct node{
+    int x;
+    node* l;
+    node* r;
+    node() : x(0), l(nullptr), r(nullptr) {}
+    node(int x) : x(x), l(nullptr), r(nullptr) {}
+};
+
+typedef node* pnode;
+
+const int mod = 1e9;
+vector<int> a;
+vector<pnode> t;
+unordered_map<int, int> ind;
+
+pnode build(int v, int l, int r) {
+    pnode x = new node();
+    if (l + 1 == r) {
+        return x;
+    }
+    int m = (l + r) / 2;
+    x->l = build(v * 2 + 1, l, m);
+    x->r = build(v * 2 + 2, m, r);
+    return x;
+}
+
+pnode update(pnode t, int v, int l, int r, int i) {
+    if (l + 1 == r) {
+        pnode x = new node(t->x + 1);
+        return x;
+    }
+    pnode x = new node();
+    int m = (l + r) / 2;
+    if (i < m) {
+        x->l = update(t->l, v * 2 + 1, l, m, i);
+        x->r = t->r;
+    } else {
+        x->l = t->l;
+        x->r = update(t->r, v * 2 + 2, m, r, i);
+    }
+    x->x = x->l->x + x->r->x;
+    return x;
+}
+
+int get(pnode a, pnode b, int v, int l, int r, int k) {
+    if (l + 1 == r) {
+        return l;
+    }
+    int m = (l + r) / 2;
+    int x = a->l->x - b->l->x;
+    if (k <= x) {
+        return get(a->l, b->l, v * 2 + 1, l, m, k);
+    } else {
+        return get(a->r, b->r, v * 2 + 2, m, r, k - x);
+    }
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, l, m;
+    cin >> n;
+    a.resize(n);
+    cin >> a[0] >> l >> m;
+    for (int i = 1; i < n; i++) {
+        a[i] = (a[i - 1] * l + m) % mod;
+    }
+    vector<int> c = a;
+    sort(c.begin(), c.end());
+    c.resize(unique(c.begin(), c.end()) - c.begin());
+    for (int i = 0; i < (int) c.size(); i++) ind[c[i]] = i;
+    t.push_back(build(0, 0, n));
+    for (int i = 0; i < n; i++) {
+        t.push_back(update(t[i], 0, 0, n, ind[a[i]]));
+    }
+    int ans = 0;
+    int B;
+    cin >> B;
+    while (B--) {
+        int q, x1, lx, mx, y1, ly, my, k1, lk, mk;
+        cin >> q >> x1 >> lx >> mx >> y1 >> ly >> my >> k1 >> lk >> mk;
+        for (int i = 0; i < q; i++) {
+            int L = min(x1, y1);
+            int R = max(x1, y1);
+            if (i != 0) k1 = ((k1 - 1) * lk + mk) % (R - L + 1) + 1;
+            ans += c[get(t[R], t[L - 1], 0, 0, n, k1)];
+            x1 = ((L - 1) * lx + mx) % n + 1;
+            y1 = ((R - 1) * ly + my) % n + 1;
+        }
+    }
+    cout << ans;
+}

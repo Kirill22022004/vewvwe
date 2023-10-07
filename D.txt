@@ -1,0 +1,58 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+const int N = 200022, mod = 1e9 + 7;
+vector<int> g[N];
+int n, a[N], fact[N], ifact[N], cnt = 0, ans = 0, sum = 0;
+
+int binpow(int x, int n) {
+    int res = 1;
+    while (n) {
+        if (n & 1) {
+            res = res * 1ll * x % mod;
+        }
+        x = x * 1ll * x % mod;
+        n /= 2;
+    }
+    return res;
+}
+
+void dfs(int v, int d) {
+    if (cnt >= d) {
+        int res = sum * 1ll * fact[cnt - 1] % mod * ifact[cnt - d] % mod * fact[n - d] % mod;
+        ans = (ans + res) % mod;
+    }
+    for (auto x : g[v]) {
+        dfs(x, d + 1);
+    }
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    fact[0] = 1;
+    for (int i = 1; i < N; i++) {
+        fact[i] = fact[i - 1] * 1ll * i % mod;
+    }
+    ifact[N - 1] = binpow(fact[N - 1], mod - 2);
+    for (int i = N - 2; i >= 0; i--) {
+        ifact[i] = ifact[i + 1] * 1ll * (i + 1) % mod;
+    }
+    cin >> n;
+    for (int i = 1; i < n; i++) {
+        int p;
+        cin >> p;
+        p--;
+        g[p].push_back(i);
+    }
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+        if (a[i] >= 0) {
+            cnt++, sum = (sum + a[i]) % mod;
+        }
+    }
+    dfs(0, 1);
+    cout << ans;
+}

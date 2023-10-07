@@ -1,0 +1,181 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define sz(a) (int) (a).size()
+#define eb emplace_back
+#define ld long double
+
+vector<int> t, d, mx;
+
+void push(int v, int l, int r) {
+    if (l + 1 != r) {
+        d[v * 2 + 1] += d[v];
+        d[v * 2 + 2] += d[v];
+    }
+    d[v] = min(d[v], 32ll);
+    long long x = (1ll << d[v]);
+    t[v] = min((long long) 2e9, (long long) t[v] * x);
+    mx[v] = min((long long) 2e9, (long long) mx[v] * x);
+    d[v] = 0;
+}
+
+int get(int v, int l, int r, int i) {
+    push(v, l, r);
+    if (i < l) return 0;
+    if (l + 1 == r) {
+        return t[v];
+    }
+    int m = (l + r) / 2;
+    return min((int) 2e9, get(v * 2 + 1, l, m, i) + get(v * 2 + 2, m, r, i));
+}
+
+void update(int v, int l, int r, int i, int x) {
+    push(v, l, r);
+    if (i < l || i >= r) return;
+    if (l + 1 == r) {
+        t[v] = min(t[v] + x, (int) 2e9);
+        mx[v] = min(mx[v] + x, (int) 2e9);
+        return;
+    }
+    int m = (l + r) / 2;
+    update(v * 2 + 1, l, m, i, x);
+    update(v * 2 + 2, m, r, i, x);
+    mx[v] = max(mx[v * 2 + 1], mx[v * 2 + 2]);
+    t[v] = min((int) 2e9, t[v * 2 + 1] + t[v * 2 + 2]);
+}
+
+void build(int v, int l, int r) {
+    t[v] = r - l;
+    mx[v] = 1;
+    if (l + 1 != r) {
+        int m = (l + r) / 2;
+        build(v * 2 + 1, l, m);
+        build(v * 2 + 2, m, r);
+    }
+}
+
+void upd(int v, int l, int r, int l1, int r1) {
+    push(v, l, r);
+    if (l >= r1 || l1 >= r) return;
+    if (l1 <= l && r <= r1) {
+        d[v]++;
+        push(v, l, r);
+        return;
+    }
+    int m = (l + r) / 2;
+    upd(v * 2 + 1, l, m, l1, r1);
+    upd(v * 2 + 2, m, r, l1, r1);
+    mx[v] = max(mx[v * 2 + 1], mx[v * 2 + 2]);
+    t[v] = min((int) 2e9, t[v * 2 + 1] + t[v * 2 + 2]);
+}
+
+int kek(int v, int l, int r, int l1, int r1) {
+    push(v, l, r);
+    if (l >= r1 || l1 >= r) return 0;
+    if (l1 <= l && r <= r1) {
+        return mx[v];
+    }
+    int m = (l + r) / 2;
+    return max(kek(v * 2 + 1, l, m, l1, r1), kek(v * 2 + 2, m, r, l1, r1));
+}
+
+int F = 0;
+
+int solve(int v, int l, int r, int k) {
+    push(v, l, r);
+    if (l + 1 == r) {
+        F += t[v];
+        return l;
+    }
+    int m = (l + r) / 2;
+    push(v * 2 + 1, l, m);
+    if (t[v * 2 + 1] >= k) {
+        return solve(v * 2 + 1, l, m, k);
+    }
+    else {
+        F += t[v * 2 + 1];
+        return solve(v * 2 + 2, m, r, k - t[v * 2 + 1]);
+    }
+}
+
+int solve2(int v, int l, int r, int k) {
+    push(v, l, r);
+    if (l + 1 == r) {
+        return l;
+    }
+    int m = (l + r) / 2;
+    push(v * 2 + 1, l, m);
+    if (t[v * 2 + 1] >= k) {
+        return solve2(v * 2 + 1, l, m, k);
+    }
+    else {
+        F += t[v * 2 + 1];
+        return solve2(v * 2 + 2, m, r, k - t[v * 2 + 1]);
+    }
+}
+
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    t.clear();
+    d.clear();
+    mx.clear();
+    t.resize(4 * n);
+    d.resize(4 * n, 0);
+    mx.resize(4 * n);
+    build(0, 0, n);
+    while (m--) {
+        char t;
+        cin >> t;
+        if (t == 'D') {
+            int l, r;
+            cin >> l >> r;
+            l--, r--;
+            F = 0; int L = solve(0, 0, n, l + 1); int res = F - 1;
+            F = 0; int R = solve2(0, 0, n, r + 1); int res2 = F;
+            if (L == R) {
+                update(0, 0, n, L, r - l + 1);
+            }
+            else {
+                update(0, 0, n, L, res - l + 1);
+                update(0, 0, n, R, r - res2 + 1);
+                upd(0, 0, n, L + 1, R);
+            }
+            continue;
+        }
+        int ans = 0;
+        int l, r;
+        cin >> l >> r;
+        l--, r--;
+        F = 0; int L = solve(0, 0, n, l + 1); int res = F - 1;
+        F = 0; int R = solve2(0, 0, n, r + 1); int res2 = F;
+        if (L == R) {
+            ans = r - l + 1;
+        }
+        else {
+            ans = max(ans, res - l + 1);
+            ans = max(ans, r - res2 + 1);
+            ans = max(ans, kek(0, 0, n, L + 1, R));
+        }
+        cout << ans << '\n';
+    }
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int q;
+    cin >> q;
+    while (q--) {
+        solve();
+    }
+}

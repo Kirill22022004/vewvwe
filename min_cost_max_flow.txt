@@ -1,0 +1,106 @@
+template <class T> class flow_graph {
+ public:
+    struct edge {
+        int to;
+        T c;
+        T f;
+        T w;
+        int rev;
+    };
+    vector<vector<edge>> g;
+    vector<T> d;
+    vector<int> pr, used;
+    int n;
+    int st, fin;
+    bool modified;
+    T flow, cost;
+    flow_graph(int n, int st, int fin) : n(n), st(st), fin(fin) {
+        modified = true;
+        assert(0 <= st && st < n && 0 <= fin && fin < n && st != fin);
+        g.resize(n);
+        d.resize(n);
+        pr.resize(n);
+        used.resize(n);
+    }
+    void clear() {
+        modified = true;
+        for (int i = 0; i < n; i++) {
+            for (edge& e : g[i]) {
+                e.f = 0;
+            }
+        }
+    }
+    void add(int from, int to, T forward_cap, T backward_cap, T w) {
+        modified = true;
+        assert(0 <= from && from < n && 0 <= to && to < n);
+        int from_size = g[from].size();
+        int to_size = g[to].size();
+        g[from].push_back({to, forward_cap, 0, w, to_size});
+        g[to].push_back({from, backward_cap, 0, -w, from_size});
+    }
+    pair<T, T> bfs() {
+        queue<int> q({st});
+        fill(d.begin(), d.end(), INT_MAX);
+        fill(pr.begin(), pr.end(), -1);
+        fill(used.begin(), used.end(), 0);
+        d[st] = 0;
+        used[st] = true;
+        while (!q.empty()) {
+            int i = q.front();
+            q.pop();
+            for (edge& e : g[i]) {
+                if (e.c > e.f && d[e.to] > d[i] + e.w) {
+                    d[e.to] = d[i] + e.w;
+                    pr[e.to] = e.rev;
+                    if (!used[e.to]) {
+                        q.push(e.to);
+                        used[e.to] = true;
+                    }
+                }
+            }
+            used[i] = false;
+        }
+        if (pr[fin] == -1) {
+            return {T(0), T(0)};
+        }
+        T d = INT_MAX, w = 0;
+        int tmp = fin;
+        while (pr[tmp] != -1) {
+            edge& e = g[tmp][pr[tmp]];
+            d = min(d, g[e.to][e.rev].c - g[e.to][e.rev].f);
+            tmp = e.to;
+        }
+        tmp = fin;
+        while (pr[tmp] != -1) {
+            edge& e = g[tmp][pr[tmp]];
+            e.f -= d;
+            g[e.to][e.rev].f += d;
+            w += g[e.to][e.rev].w * d;
+            tmp = e.to;
+        }
+        return {d, w};
+    }
+    T min_cost_max_flow(int type) {
+        if (!modified) {
+            return (type == 0 ? flow : cost);
+        }
+        modified = false;
+        T ans = 0, res = 0;
+        while (true) {
+            pair<T, T> c = bfs();
+            if (c.first == 0) break;
+            ans = ans + c.first;
+            res = res + c.second;
+        }
+        flow = ans, cost = res;
+        return (type == 0 ? flow : cost);
+    }
+    vector<bool> min_cut() {
+        min_cost_max_flow(0);
+        vector<bool> ret(n);
+        for (int i = 0; i < n; i++) {
+            ret[i] = (pr[i] != -1 || i == st);
+        }
+        return ret;
+    }
+};

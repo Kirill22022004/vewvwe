@@ -1,0 +1,33 @@
+#define int long long
+
+int gcd(int a, int b, int& x, int& y) {
+    if (a == 0) {
+        x = 0, y = 1;
+        return b;
+    }
+    int x1, y1;
+    int g = gcd(b % a, a, x1, y1);
+    x = y1 - (b / a) * x1;
+    y = x1;
+    return g;
+}
+
+pair<int, int> solve(int a, int b, int c) {
+    int x, y;
+    int g = gcd(a, b, x, y);
+    if (c % g != 0) {
+        return {-1, -1};
+    }
+    x *= c / g;
+    y *= c / g;
+    if (x >= 0) {
+        int k = x / (b / g);
+        x -= k * (b / g);
+        y += k * (a / g);
+    } else {
+        int k = (abs(x) + b / g - 1) / (b / g);
+        x += k * (b / g);
+        y -= k * (a / g);
+    }
+    return {x, y};
+}

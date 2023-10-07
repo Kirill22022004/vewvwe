@@ -1,0 +1,50 @@
+class LCA {
+ public:
+    int n;
+    vector<pair<int, int>> st;
+    vector<int> tin, dist, lg;
+    vector<vector<int>> g;
+    vector<vector<pair<int, int>>> ST;
+
+    void dfs(int v, int pr, int d) {
+        tin[v] = st.size();
+        dist[v] = d;
+        st.push_back({d, v});
+        for (auto x : g[v]) {
+            if (x == pr) continue;
+            dfs(x, v, d + 1);
+            st.push_back({d, v});
+        }
+    }
+
+    LCA(vector<vector<int>>& _g, int stv) {
+        n = (int) _g.size();
+        g = _g;
+        tin.resize(n);
+        dist.resize(n);
+        dfs(stv, -1, 0);
+        int m = st.size();
+        lg.resize(m + 1);
+        for (int i = 2; i <= m; i++) lg[i] = lg[i / 2] + 1;
+        int maxlg = lg[m] + 1;
+        ST.resize(maxlg);
+        ST[0] = st;
+        for (int i = 1; i < maxlg; i++) {
+            ST[i].resize(m - (1 << i) + 1);
+            for (int j = 0; j < m - (1 << i) + 1; j++) {
+                ST[i][j] = min(ST[i - 1][j], ST[i - 1][j + (1 << (i - 1))]);
+            }
+        }
+    }
+
+    int lca(int x, int y) {
+        int l = min(tin[x], tin[y]), r = max(tin[x], tin[y]);
+        int LG = lg[r - l + 1];
+        pair<int, int> res = min(ST[LG][l], ST[LG][r - (1 << LG) + 1]);
+        return res.second;
+    }
+
+    int distance(int x, int y) {
+        return dist[x] + dist[y] - 2 * dist[lca(x, y)];
+    }
+};

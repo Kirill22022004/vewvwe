@@ -1,0 +1,155 @@
+struct slope_trick {
+    const long long INF = numeric_limits<long long>::max() / 3;
+    long long ans;
+    priority_queue<long long, vector<long long>, less<long long>> L;
+    priority_queue<long long, vector<long long>, greater<long long>> R;
+    long long addL, addR;
+ 
+    void push_R(long long a) {
+        R.push(a - addR);
+    }
+ 
+    long long top_R() {
+        if (R.empty()) {
+            return INF;
+        } else {
+            return R.top() + addR;
+        }
+    }
+ 
+    long long pop_R() {
+        long long val = top_R();
+        if (!R.empty()) {
+            R.pop();
+        }
+        return val;
+    }
+ 
+    void push_L(long long a) {
+        L.push(a - addL);
+    }
+ 
+    long long top_L() {
+        if (L.empty()) {
+            return -INF;
+        } else {
+            return L.top() + addL;
+        }
+    }
+ 
+    long long pop_L() {
+        long long val = top_L();
+        if (!L.empty()) {
+            L.pop();
+        }
+        return val;
+    }
+ 
+    size_t size() {
+        return L.size() + R.size();
+    }
+    
+    // build
+    slope_trick() {
+        ans = 0;
+        addL = 0;
+        addR = 0;
+    }
+ 
+    // f(x) += a
+    void add_all(long long a) {
+        ans += a;
+    }
+ 
+    // add \_
+    // f(x) += max(a - x, 0)
+    void add_left(long long a) {
+        ans += max(a - top_R(), (long long) 0);
+        push_R(a);
+        push_L(pop_R());
+    }
+ 
+    // add _/
+    // f(x) += max(x - a, 0)
+    void add_right(long long a) {
+        ans += max(top_L() - a, (long long) 0);
+        push_L(a);
+        push_R(pop_L());
+    }
+ 
+    // add \/
+    // f(x) += abs(x - a)
+    void add_abs(long long a) {
+        add_left(a);
+        add_right(a);
+    }
+ 
+    // \/ -> \_
+    // new_f(x) = min f(y) (y <= x)
+    void clear_right() {
+        while (!R.empty()) {
+            R.pop();
+        }
+    }
+ 
+    // \/ -> _/
+    // new_f(x) = min f(y) (y >= x)
+    void clear_left() {
+        while (!L.empty()) {
+            L.pop();
+        }
+    }
+ 
+    // \/ -> \_/
+    // new_f(x) = min f(y) (x + l <= y <= x + r)
+    void shift(long long l, long long r) {
+        addL -= r;
+        addR -= l;
+    }
+ 
+    // \/. -> .\/
+    // new_f(x) = f(x - a)
+    void shift(long long a) {
+        shift(-a, -a);
+    }
+ 
+    // f(x)
+    long long get(long long x) {
+        long long res = ans;
+        vector<long long> copy_L, copy_R;
+        while (!L.empty()) {
+            long long a = pop_L();
+            copy_L.push_back(a);
+            res += max(a - x, (long long) 0);
+        }
+        while (!R.empty()) {
+            long long a = pop_R();
+            copy_R.push_back(a);
+            res += max(x - a, (long long) 0);
+        }
+        for (auto& a : copy_L) {
+            L.push(a);
+        }
+        for (auto& a : copy_R) {
+            R.push(a);
+        }
+        return res;
+    }
+ 
+    void merge(slope_trick& st) {
+        if (st.size() > size()) {
+            swap(st.L, L);
+            swap(st.R, R);
+            swap(st.addL, addL);
+            swap(st.addR, addR);
+            swap(st.ans, ans);
+        }
+        while (!st.R.empty()) {
+            add_right(st.pop_R());
+        }
+        while (!st.L.empty()) {
+            add_left(st.pop_L());
+        }
+        ans += st.ans;
+    }
+};

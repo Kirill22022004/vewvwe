@@ -1,0 +1,48 @@
+struct slope_trick {
+    long long ans;
+    priority_queue<long long, vector<long long>, less<long long>> L;
+    priority_queue<long long, vector<long long>, greater<long long>> R;
+    long long addL, addR;
+    
+    // build
+    slope_trick() {
+        ans = 0;
+        // if f(x) = 0 for x = 0, otherwise f(x) = inf, then should add n zeroes
+        {
+            int n = 200000;
+            for (int i = 0; i < n; i++) {
+                L.push(0);
+                R.push(0);
+            }
+        }
+        addL = 0;
+        addR = 0;
+    }
+    
+    // get minimum f(x)
+    long long get_min() {
+        return ans;
+    }
+    
+    // add y = x - a for x in [a, +inf]
+    void add_right(long long a) {
+        ans += max(L.top() + addL - a, (long long) 0);
+        L.push(a - addL);
+        R.push(L.top() + addL - addR);
+        L.pop();
+    }
+    
+    // add y = a - x for x in [-inf, a]
+    void add_left(long long a) {
+        ans += max(a - (R.top() + addR), (long long) 0);
+        R.push(a - addR);
+        L.push(R.top() + addR - addL);
+        R.pop();
+    }
+    
+    // new_f(x) = minimum f(i) for i in [x - l, x + r]
+    void update(long long l, long long r) {
+        addL -= l;
+        addR += r;
+    }
+};

@@ -1,0 +1,77 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+int a[30000], b[30000], c[30000], n, m, life[1000], used[1000];
+vector<int> g[1022];
+long long ans = (long long) 1e18, w[1000];
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    cin >> n >> m;
+    fill(life, life + n, 1);
+    for (int i = 0; i < m; i++) {
+        cin >> a[i] >> b[i] >> c[i];
+        a[i]--, b[i]--;
+        if (a[i] == b[i]) {
+            assert(false);
+        }
+        g[a[i]].push_back(i);
+        g[b[i]].push_back(i);
+    }
+    for (int it = 0; it + 1 < n; it++) {
+        int N = n - it;
+        fill(used, used + n, 0);
+        fill(w, w + n, 0);
+        int st = 0;
+        while (!life[st]) {
+            st++;
+        }
+        used[st] = 1;
+        for (auto i : g[st]) {
+            int u = (a[i] ^ b[i] ^ st);
+            w[u] += c[i];
+        }
+        for (int k = 0; k + 1 < N; k++) {
+            int v = -1;
+            for (int j = 0; j < n; j++) {
+                if (life[j] && !used[j] && (v == -1 || w[v] < w[j])) {
+                    v = j;
+                }
+            }
+            used[v] = 1;
+            for (auto i : g[v]) {
+                int u = (a[i] ^ b[i] ^ v);
+                w[u] += c[i];
+            }
+            if (k + 1 == N - 1) {
+                ans = min(ans, w[v]);
+                life[st] = 0;
+                for (int i = 0; i < m; i++) {
+                    if (a[i] == st) {
+                        a[i] = v;
+                    }
+                    if (b[i] == st) {
+                        b[i] = v;
+                    }
+                }
+                vector<int> R;
+                for (auto i : g[st]) {
+                    if (a[i] != b[i]) {
+                        R.push_back(i);
+                    }
+                }
+                for (auto i : g[v]) {
+                    if (a[i] != b[i]) {
+                        R.push_back(i);
+                    }
+                }
+                g[v] = R;
+            }
+            st = v;
+        }
+    }
+    cout << ans;
+}

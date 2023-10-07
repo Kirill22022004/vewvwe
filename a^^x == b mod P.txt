@@ -1,0 +1,26 @@
+int binpow(int x, int n, int mod) {
+    if (n == 0) return 1 % mod;
+    int res = 1;
+    if (n % 2 == 1) res *= x;
+    return (binpow((x * x) % mod, n / 2, mod) * res) % mod;
+}
+
+int solve(int a, int b, int m) {
+    int x = (int) sqrt(m) + 1;
+    int an = binpow(a, x, m);
+    int tmp = an;
+    unordered_map<int, int> P;
+    for (int i = 1; i <= x; i++) {
+        if (P.find(tmp) == P.end()) P[tmp] = i;
+        tmp = (tmp * an) % m;
+    }
+    tmp = b;
+    for (int i = 0; i <= x; i++) {
+        if (P.find(tmp) != P.end()) {
+            int ans = x * P[tmp] - i;
+            if (ans < m) return ans;
+        }
+        tmp = (tmp * a) % m;
+    }
+    return -1;
+}

@@ -1,0 +1,99 @@
+struct line {
+    long long k, b;
+    line() : k(0), b(1e18) {}
+    line(long long k, long long b) : k(k), b(b) {}
+};
+
+struct node {
+    line x;
+    node* l;
+    node* r;
+    node() : x(), l(nullptr), r(nullptr) {}
+    node(line t) : x(t), l(nullptr), r(nullptr) {}
+};
+
+typedef node* pnode;
+
+struct Li_Chao {
+    int L = -1e5 - 5, R = 1e5 + 5;
+
+    pnode root = new node();
+    int cnt = 0;
+
+    long long get(line t, long long x) {
+        return t.k * x + t.b;
+    }
+
+    void update(pnode t) {
+        if (!t->l) {
+            t->l = new node();
+        }
+        if (!t->r) {
+            t->r = new node();
+        }
+    }
+
+    void update(pnode t, int l, int r, line x) {
+        if (x.b == (long long) 1e18) {
+            return;
+        }
+        update(t);
+        int m = (l + r - (l + r) % 2) / 2;
+        if (get(t->x, m) > get(x, m)) {
+            swap(t->x, x);
+        }
+        if (l + 1 != r) {
+            if (x.k < t->x.k) {
+                update(t->r, m, r, x);
+            } else {
+                update(t->l, l, m, x);
+            }
+        }
+    }
+
+    long long get(pnode t, int l, int r, long long x) {
+        if (!t) {
+            return (long long) 1e18;
+        }
+        update(t);
+        if (l + 1 == r) {
+            return get(t->x, x);
+        }
+        int m = (l + r - (l + r) % 2) / 2;
+        if (x < m) {
+            return min(get(t->x, x), get(t->l, l, m, x));
+        } else {
+            return min(get(t->x, x), get(t->r, m, r, x));
+        }
+    }
+
+    void add(line t) {
+        update(root, L, R, t);
+        cnt++;
+    }
+
+    long long get(long long x) {
+        return get(root, L, R, x);
+    }
+};
+
+
+void merge(pnode x, Li_Chao& A) {
+    if (!x) {
+        return;
+    }
+    merge(x->l, A);
+    merge(x->r, A);
+    if (x->x.b != (long long) 1e18) {
+        A.add(x->x);
+    }
+}
+
+Li_Chao merge(Li_Chao A, Li_Chao B) {
+    if (A.cnt < B.cnt) {
+        swap(A, B);
+    }
+    A.cnt += B.cnt;
+    merge(B.root, A);
+    return A;
+}

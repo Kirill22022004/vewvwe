@@ -1,0 +1,38 @@
+struct kht {
+    struct line {
+        long long k, b;
+        line(long long k, long long b) : k(k), b(b) {}
+    };
+
+    long double X(line a, line b) {
+        return ((long double) b.b - a.b) / ((long double) a.k - b.k);
+    }
+
+    vector<line> st;
+
+    void add(line t) {
+        while ((int) st.size() >= 2) {
+            line x = st.back();
+            st.pop_back();
+            line y = st.back();
+            if (X(x, y) <= X(y, t)) {
+                st.push_back(x);
+                break;
+            }
+        }
+        st.push_back(t);
+    }
+
+    long long get(long long x) {
+        int l = 0, r = st.size();
+        while (l + 1 < r) {
+            int m = (l + r) / 2;
+            if (X(st[m], st[m - 1]) <= x) {
+                l = m;
+            } else {
+                r = m;
+            }
+        }
+        return st[l].k * x + st[l].b;
+    }
+};

@@ -1,0 +1,155 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+const int N = 1000022;
+vector<int> ga[N], gb[N];
+vector<int> ts, tmp = {0}, tmp2;
+pair<int, int> dp[N];
+int dist[N], tin[N], tout[N], sz[N], root[N], value[N], parent[N], st[N];
+int n, ans = 2 * N, ansv, ansu, t = 0, start;
+
+void dfs(int v) {
+    tin[v] = t++;
+    ts.push_back(v);
+    for (auto x : gb[v]) {
+        if (dist[x] == -1) {
+            dist[x] = dist[v] + 1;
+            dfs(x);
+        }
+    }
+    tout[v] = t++;
+}
+
+void upd(pair<int, int>& x, int y) {
+    if (y == -1) {
+        return;
+    }
+    if (value[y] + dist[y] < value[x.first] + dist[x.first]) {
+        x.second = x.first, x.first = y;
+    } else if (x.second == -1 || (value[y] + dist[y] < value[x.second] + dist[x.second])) {
+        x.second = y;
+    }
+}
+
+void upd(pair<int, int>& x, pair<int, int> y) {
+    upd(x, y.first);
+    upd(x, y.second);
+}
+
+vector<pair<int, int>> G(int n) {
+    mt19937 gen(time(0));
+    vector<pair<int, int>> res;
+    vector<int> id(n);
+    iota(id.begin(), id.end(), 0);
+    shuffle(id.begin(), id.end(), gen);
+    for (int i = 1; i < n; i++) {
+        res.push_back({id[i], id[gen() % i]});
+    }
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    cin >> n;
+    auto A = G(n);
+    for (auto [x, y] : A) {
+        ga[x].push_back(y);
+        ga[y].push_back(x);
+    }
+    auto B = G(n);
+    for (auto [x, y] : B) {
+        gb[x].push_back(y);
+        gb[y].push_back(x);
+    }
+    fill(dist, dist + n, -1);
+    dist[0] = 0;
+    dfs(0);
+    reverse(ts.begin(), ts.end());
+    int cnt = 0;
+    while ((int) tmp.size()) {
+        cout << cnt++ << endl;
+        for (auto& v : tmp) {
+            parent[v] = -1;
+            start = 0;
+            st[start++] = v;
+            for (int i = 0; i < start; i++) {
+                for (int x : ga[st[i]]) {
+                    if (x != parent[st[i]]) {
+                        st[start++] = x;
+                        parent[x] = st[i];
+                    }
+                }
+            }
+            int u = -1;
+            for (int i = start - 1; i >= 0; i--) {
+                sz[st[i]] = 1;
+                for (int x : ga[st[i]]) {
+                    if (x != parent[st[i]]) {
+                        sz[st[i]] += sz[x];
+                    }
+                }
+                if (sz[st[i]] >= (start + 1) / 2) {
+                    u = st[i];
+                    break;
+                }
+            }
+            v = u;
+            parent[v] = -1;
+            value[v] = 0;
+            start = 0;
+            st[start++] = v;
+            for (int i = 0; i < start; i++) {
+                root[st[i]] = v;
+                for (int x : ga[st[i]]) {
+                    if (x != parent[st[i]]) {
+                        st[start++] = x;
+                        parent[x] = st[i];
+                        value[x] = value[st[i]] + 1;
+                    }
+                }
+            }
+            gb[v].clear();
+        }
+        for (auto v : ts) {
+            if (root[v] == -1) {
+                continue;
+            }
+            int u = root[v];
+            dp[v] = {v, -1};
+            if (value[v] >= ans) {
+                continue;
+            }
+            while ((int) gb[u].size() > 0 && tin[gb[u].back()] < tout[v]) {
+                upd(dp[v], dp[gb[u].back()]);
+                gb[u].pop_back();
+            }
+            gb[u].push_back(v);
+            if (dp[v].first != -1 && dp[v].second != -1) {
+                int res = dist[dp[v].first] + value[dp[v].first];
+                res += dist[dp[v].second] + value[dp[v].second];
+                res -= 2 * dist[v];
+                if (res < ans) {
+                    ans = res;
+                    ansv = dp[v].first;
+                    ansu = dp[v].second;
+                }
+            }
+        }
+        tmp2 = {};
+        for (auto v : tmp) {
+            root[v] = -1;
+            for (auto x : ga[v]) {
+                tmp2.push_back(x);
+                int i = 0;
+                while (ga[x][i] != v) i++;
+                swap(ga[x][i], ga[x].back());
+                ga[x].pop_back();
+            }
+        }
+        tmp = tmp2;
+    }
+    cout << ans << '\n' << ansv + 1 << " " << ansu + 1 << '\n';
+}

@@ -1,0 +1,50 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+int n, tmp;
+long long ans;
+vector<pair<int, int>> a;
+string s;
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    cin >> n >> s;
+    for (int i = 0; i < n; i++) {
+        if (i == 0 || s[i] != s[i - 1]) {
+            a.push_back({s[i] - 'a', 1});
+        } else {
+            a.back().second += 1;
+        }
+    }
+    ans = n * 1ll * (n + 1) / 2;
+    tmp = 0;
+    for (int i = 0; i < (int) a.size(); i += 2) {
+        int x = a[i].second;
+        ans -= x * 1ll * (x + 1) / 2;
+        if (i >= 2 && a[i].first == a[i - 2].first) {
+            tmp = 0;
+        }
+        if (i >= 1 && a[i - 1].second >= 2) {
+            tmp = 0;
+        }
+        ans -= tmp * 1ll * x;
+        tmp += x;
+    }
+    tmp = 0;
+    for (int i = 1; i < (int) a.size(); i += 2) {
+        int x = a[i].second;
+        ans -= x * 1ll * (x + 1) / 2;
+        if (i >= 2 && a[i].first == a[i - 2].first) {
+            tmp = 0;
+        }
+        if (i >= 1 && a[i - 1].second >= 2) {
+            tmp = 0;
+        }
+        ans -= tmp * 1ll * x;
+        tmp += x;
+    }
+    cout << ans;
+}

@@ -1,0 +1,86 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+//#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define sz(a) (int) (a).size()
+#define eb emplace_back
+#define ld long double
+#define ve vector
+#define forn(i, n) for (int i = 0; i < n; i++)
+
+const int N = 500022, K = 19;
+int dp[N][K];
+
+void kek() {
+    int n, a;
+    cin >> n >> a;
+    for (int x = 1; x * x <= n; x++) {
+        int need = x - 1 + n / x - 1 + n % x;
+        if (need <= a) {
+            cout << 1 << '\n';
+            return;
+        }
+    }
+    cout << -1 << '\n';
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int q, g;
+    cin >> q >> g;
+    if (g == 1 && g == 22022004) {
+        while (q--) kek();
+        return 0;
+    }
+    forn (i, N) forn (j, K) dp[i][j] = (int) 1e9;
+    for (int a = 0; a < K; a++) {
+        dp[1][a] = 0;
+    }
+    for (int x = 1; x < N; x++) {
+        forn (j, K) {
+            if (dp[x][j] >= 1e9) {
+                continue;
+            }
+            for (int add = 1; add <= 4; add++) {
+                if (add + x >= N) break;
+                forn (j2, K) {
+                    if (j + j2 < K) {
+                        dp[x + add][j + j2] = min(dp[x + add][j + j2], dp[x][j] + dp[add][j2] + 1);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            for (int y = 1; y <= x && y * x < N; y++) {
+                forn (j2, K) {
+                    if (j + j2 + 1 < K) {
+                        dp[y * x][j + j2 + 1] = min(dp[y * x][j + j2 + 1], dp[x][j] + dp[y][j2]);
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    while (q--) {
+        int n, a;
+        cin >> n >> a;
+        int ans = -1;
+        forn (i, K) {
+            if (dp[n][i] <= a) {
+                if (ans == -1) ans = i;
+                else ans = min(ans, i);
+            }
+        }
+        cout << ans << '\n';
+    }
+}

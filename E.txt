@@ -1,0 +1,192 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+struct node {
+    long long and_sum, or_sum, xor_sum, and_upd, or_upd, xor_upd;
+    node() {}
+};
+
+const int N = 500000, K = 60;
+long long a[N], mx = (1ll << K) - 1;
+node t[4 * N];
+
+void push(int v, int l, int r) {
+    t[v].and_sum &= t[v].and_upd;
+    t[v].or_sum &= t[v].and_upd;
+    t[v].xor_sum &= t[v].and_upd;
+    if (l + 1 != r) {
+        t[v * 2 + 1].and_upd &= t[v].and_upd;
+        t[v * 2 + 1].or_upd &= t[v].and_upd;
+        t[v * 2 + 1].xor_upd &= t[v].and_upd;
+        t[v * 2 + 2].and_upd &= t[v].and_upd;
+        t[v * 2 + 2].or_upd &= t[v].and_upd;
+        t[v * 2 + 2].xor_upd &= t[v].and_upd;
+    }
+    t[v].and_upd = mx;
+    t[v].and_sum |= t[v].or_upd;
+    t[v].or_sum |= t[v].or_upd;
+    if ((r - l) & 1) {
+        t[v].xor_sum |= t[v].or_upd;
+    } else {
+        t[v].xor_sum &= (mx - t[v].or_upd);
+    }
+    if (l + 1 != r) {
+        t[v * 2 + 1].or_upd |= t[v].or_upd;
+        t[v * 2 + 1].xor_upd &= (mx - t[v].or_upd);
+        t[v * 2 + 2].or_upd |= t[v].or_upd;
+        t[v * 2 + 2].xor_upd &= (mx - t[v].or_upd);
+    }
+    t[v].or_upd = 0;
+    long long AND = t[v].and_sum, OR = t[v].or_sum;
+    t[v].and_sum = AND ^ (AND & t[v].xor_upd) ^ ((mx - OR) & t[v].xor_upd);
+    t[v].or_sum = OR ^ ((mx - OR) & t[v].xor_upd) ^ (AND & t[v].xor_upd);
+    if ((r - l) & 1) {
+        t[v].xor_sum ^= t[v].xor_upd;
+    }
+    if (l + 1 != r) {
+        t[v * 2 + 1].xor_upd ^= t[v].xor_upd;
+        t[v * 2 + 2].xor_upd ^= t[v].xor_upd;
+    }
+    t[v].xor_upd = 0;
+}
+
+void pull(int v) {
+    t[v].and_sum = (t[v * 2 + 1].and_sum & t[v * 2 + 2].and_sum);
+    t[v].or_sum = (t[v * 2 + 1].or_sum | t[v * 2 + 2].or_sum);
+    t[v].xor_sum = (t[v * 2 + 1].xor_sum ^ t[v * 2 + 2].xor_sum);
+}
+
+void build(int v, int l, int r) {
+    t[v].or_upd = t[v].xor_upd = 0;
+    t[v].and_upd = mx;
+    if (l + 1 == r) {
+        t[v].and_sum = t[v].or_sum = t[v].xor_sum = a[l];
+        return;
+    }
+    int m = (l + r) / 2;
+    build(v * 2 + 1, l, m);
+    build(v * 2 + 2, m, r);
+    pull(v);
+}
+
+void updand(int v, int l, int r, int l1, int r1, long long x) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) {
+        return;
+    }
+    if (l1 <= l && r <= r1) {
+        t[v].and_upd = x;
+        push(v, l, r);
+        return;
+    }
+    int m = (l + r) / 2;
+    updand(v * 2 + 1, l, m, l1, r1, x);
+    updand(v * 2 + 2, m, r, l1, r1, x);
+    pull(v);
+}
+
+void updor(int v, int l, int r, int l1, int r1, long long x) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) {
+        return;
+    }
+    if (l1 <= l && r <= r1) {
+        t[v].or_upd = x;
+        push(v, l, r);
+        return;
+    }
+    int m = (l + r) / 2;
+    updor(v * 2 + 1, l, m, l1, r1, x);
+    updor(v * 2 + 2, m, r, l1, r1, x);
+    pull(v);
+}
+
+void updxor(int v, int l, int r, int l1, int r1, long long x) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) {
+        return;
+    }
+    if (l1 <= l && r <= r1) {
+        t[v].xor_upd = x;
+        push(v, l, r);
+        return;
+    }
+    int m = (l + r) / 2;
+    updxor(v * 2 + 1, l, m, l1, r1, x);
+    updxor(v * 2 + 2, m, r, l1, r1, x);
+    pull(v);
+}
+
+long long getand(int v, int l, int r, int l1, int r1) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) {
+        return mx;
+    }
+    if (l1 <= l && r <= r1) {
+        return t[v].and_sum;
+    }
+    int m = (l + r) / 2;
+    return (getand(v * 2 + 1, l, m, l1, r1) & getand(v * 2 + 2, m, r, l1, r1));
+}
+
+long long getor(int v, int l, int r, int l1, int r1) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) {
+        return 0;
+    }
+    if (l1 <= l && r <= r1) {
+        return t[v].or_sum;
+    }
+    int m = (l + r) / 2;
+    return (getor(v * 2 + 1, l, m, l1, r1) | getor(v * 2 + 2, m, r, l1, r1));
+}
+
+long long getxor(int v, int l, int r, int l1, int r1) {
+    push(v, l, r);
+    if (l1 >= r || l >= r1) {
+        return 0;
+    }
+    if (l1 <= l && r <= r1) {
+        return t[v].xor_sum;
+    }
+    int m = (l + r) / 2;
+    return (getxor(v * 2 + 1, l, m, l1, r1) ^ getxor(v * 2 + 2, m, r, l1, r1));
+}
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, q;
+    cin >> n >> q;
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+    }
+    build(0, 0, n);
+    while (q--) {
+        string t, s;
+        int l, r;
+        cin >> t >> s >> l >> r;
+        l--, r--;
+        if (t == "upd") {
+            long long x;
+            cin >> x;
+            if (s == "and") {
+                updand(0, 0, n, l, r + 1, x);
+            } else if (s == "or") {
+                updor(0, 0, n, l, r + 1, x);
+            } else {
+                updxor(0, 0, n, l, r + 1, x);
+            }
+        } else {
+            if (s == "and") {
+                cout << getand(0, 0, n, l, r + 1) << '\n';
+            } else if (s == "or") {
+                cout << getor(0, 0, n, l, r + 1) << '\n';
+            } else {
+                cout << getxor(0, 0, n, l, r + 1) << '\n';
+            }
+        }
+    }
+}

@@ -1,0 +1,180 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+template <typename A, typename B>
+string to_string(pair<A, B> p);
+
+template <typename A, typename B, typename C>
+string to_string(tuple<A, B, C> p);
+
+template <typename A, typename B, typename C, typename D>
+string to_string(tuple<A, B, C, D> p);
+
+string to_string(const string& s) {
+    return '"' + s + '"';
+}
+
+string to_string(const char& s) {
+    string res = "'";
+    res += s;
+    res += "'";
+    return res;
+}
+
+string to_string(bool b) {
+    return (b ? "true" : "false");
+}
+
+string to_string(vector<bool> v) {
+    string res = "{";
+    for (int i = 0; i < static_cast<int>(v.size()); i++) {
+        if (i) res += ", ";
+        res += to_string(v[i]);
+    }
+    res += "}";
+    return res;
+}
+
+template <size_t N>
+string to_string(bitset<N> v) {
+    string res = "";
+    for (size_t i = 0; i < N; i++) {
+        res += static_cast<char>('0' + v[i]);
+    }
+    return res;
+}
+
+template <typename A>
+string to_string(A v) {
+    bool first = true;
+    string res = "{";
+    for (const auto &x : v) {
+        if (!first) {
+            res += ", ";
+        }
+        first = false;
+        res += to_string(x);
+    }
+    res += "}";
+    return res;
+}
+
+template <typename A, typename B>
+string to_string(pair<A, B> p) {
+    return "(" + to_string(p.first) + ", " + to_string(p.second) + ")";
+}
+
+template <typename A, typename B, typename C>
+string to_string(tuple<A, B, C> p) {
+    return "(" + to_string(get<0>(p)) + ", " + to_string(get<1>(p)) + ", " + to_string(get<2>(p)) + ")";
+}
+
+template <typename A, typename B, typename C, typename D>
+string to_string(tuple<A, B, C, D> p) {
+    return "(" + to_string(get<0>(p)) + ", " + to_string(get<1>(p)) + ", " + to_string(get<2>(p)) + ", " + to_string(get<3>(p)) + ")";
+}
+
+void debug_out() { cerr << endl; }
+
+template <typename Head, typename... Tail>
+void debug_out(Head H, Tail... T) {
+    cerr << " " << to_string(H);
+    debug_out(T...);
+}
+
+#define debug(...) cerr << "[" << #__VA_ARGS__ << "]:", debug_out(__VA_ARGS__)
+#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define eb emplace_back
+#define ld long double
+
+vector<vector<int>> g, a, go;
+vector<int> h, dp, parent;
+vector<pii> dp2;
+
+void dfs(int v, int pr, int d) {
+    h[v] = d;
+    dp[v] = v;
+    parent[v] = pr;
+    go[v].resize(20);
+    go[v][0] = pr;
+    for (int j = 1; j < 20; j++) go[v][j] = go[go[v][j - 1]][j - 1];
+    for (auto x : g[v]) {
+        if (x != pr) {
+            dfs(x, v, d + 1);
+            if (h[dp[x]] > h[dp[v]]) dp[v] = dp[x];
+        }
+    }
+}
+
+void dfs(int v, int pr) {
+    if (dp2[v].fi == -1) {
+        int s = a.size();
+        a.pb(vector<int> ());
+        int x = dp[v];
+        while (true) {
+            dp2[x] = {s, a[s].size()};
+            a[s].pb(x);
+            if (x == v) break;
+            x = parent[x];
+        }
+        int p = a[s].size();
+        while (p--) {
+            x = parent[x];
+            a[s].pb(x);
+        }
+    }
+    for (auto x : g[v]) {
+        if (x != pr) dfs(x, v);
+    }
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, m;
+    cin >> n >> m;
+    g.resize(n);
+    h.resize(n);
+    dp.resize(n);
+    parent.resize(n, -1);
+    go.resize(n);
+    for (int i = 1; i < n; i++) {
+        int x;
+        cin >> x;
+        g[x].pb(i);
+        g[i].pb(x);
+    }
+    vector<int> lg(n + 1, 0);
+    for (int i = 2; i <= n; i++) lg[i] = lg[i / 2] + 1;
+    dfs(0, 0, 0);
+    dp2.resize(n, {-1, -1});
+    dfs(0, -1);
+    int ans = 0, res = 0;
+    int a1, a2, x, y, z;
+    cin >> a1 >> a2 >> x >> y >> z;
+    while (m--) {
+        int v = (a1 + res) % n, d = a2;
+        if (h[v] <= d) {
+            res = 0;
+        } else if (d > 0) {
+            v = go[v][lg[d]];
+            d -= (1 << lg[d]);
+            res = a[dp2[v].fi][dp2[v].se + d];
+        } else {
+            res = v;
+        }
+        ans += res;
+        int a3 = (x * a1 + y * a2 + z) % n;
+        int a4 = (x * a2 + y * a3 + z) % n;
+        a1 = a3, a2 = a4;
+    }
+    cout << ans;
+}

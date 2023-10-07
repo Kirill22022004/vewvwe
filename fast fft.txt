@@ -1,0 +1,115 @@
+namespace fft {
+    #define my_double double // long double
+ 
+    struct number {
+        my_double x, y;
+        number() : x(0), y(0) {}
+        number(my_double x, my_double y) : x(x), y(y) {}
+    };
+ 
+    number operator+ (number a, number b) {
+        return number(a.x + b.x, a.y + b.y);
+    }
+ 
+    number operator- (number a, number b) {
+        return number(a.x - b.x, a.y - b.y);
+    }
+ 
+    number operator* (number a, number b) {
+        return number(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+    }
+ 
+    number conj(number a) {
+        return number(a.x, -a.y);
+    }
+ 
+    int maxn = 1;
+    vector<number> roots = {{0, 0}, {1, 0}};
+    vector<number> fa, fb;
+    vector<int> rev = {0, 1};
+    const my_double PI = atan2(0, -1);
+ 
+    void precalc(int n) {
+        if (n <= maxn) {
+            return;
+        }
+        rev.resize(1 << n);
+        for (int i = 0; i < (1 << n); i++) {
+            rev[i] = (rev[i / 2] / 2) + ((i & 1) << (n - 1));
+        }
+        roots.resize(1 << n);
+        while (maxn < n) {
+            my_double angle = PI / (1 << maxn);
+            for (int i = (1 << (maxn - 1)); i < (1 << maxn); i++) {
+                roots[(i << 1)] = roots[i];
+                my_double angle_i = angle * (2 * i + 1 - (1 << maxn));
+                roots[(i << 1) + 1] = number(cos(angle_i), sin(angle_i));
+            }
+            maxn++;
+        }
+    }
+ 
+    void fft(vector<number>& a) {
+        int n = (int) a.size();
+        int zeros = __builtin_ctz(n);
+        precalc(zeros);
+        int shift = maxn - zeros;
+        for (int i = 0; i < n; i++) {
+            if (i < (rev[i] >> shift)) {
+                swap(a[i], a[rev[i] >> shift]);
+            }
+        }
+        for (int k = 1; k < n; k *= 2) {
+            for (int i = 0; i < n; i += 2 * k) {
+                for (int j = 0; j < k; j++) {
+                    number z = a[i + j + k] * roots[j + k];
+                    a[i + j + k] = a[i + j] - z;
+                    a[i + j] = a[i + j] + z;
+                }
+            }
+        }
+    }
+ 
+    vector<long long> multiply(const vector<int>& a, const vector<int>& b) {
+        if (a.empty() || b.empty()) {
+            return {};
+        }
+        //if (a == b) {
+        //    return square(a);
+        //}
+        int need = (int) a.size() + (int) b.size() - 1;
+        int k = 1;
+        while ((1 << k) < need) k++;
+        precalc(k);
+        int sz = (1 << k);
+        fa.clear();
+        fa.resize(sz);
+        for (int i = 0; i < sz; i++) {
+            int x = (i < (int) a.size() ? a[i] : 0);
+            int y = (i < (int) b.size() ? b[i] : 0);
+            fa[i] = number(x, y);
+        }
+        fft(fa);
+        number r(0, -0.25 / sz);
+        for (int i = 0; i <= (sz >> 1); i++) {
+            int j = (sz - i) & (sz - 1);
+            number z = (fa[j] * fa[j] - conj(fa[i] * fa[i])) * r;
+            fa[j] = (fa[i] * fa[i] - conj(fa[j] * fa[j])) * r;
+            fa[i] = z;
+        }
+        for (int i = 0; i < (sz >> 1); i++) {
+            number A0 = (fa[i] + fa[i + (sz >> 1)]);
+            number A1 = (fa[i] - fa[i + (sz >> 1)]) * roots[(sz >> 1) + i];
+            fa[i] = A0 + A1 * number(0, 1);
+        }
+        fa.resize(sz >> 1);
+        fft(fa);
+        vector<long long> res(need);
+        for (int i = 0; i < need; i++) {
+            res[i] = llround(i % 2 == 0 ? fa[i >> 1].x : fa[i >> 1].y);
+        }
+        return res;
+    }
+}  // namespace fft
+ 
+using namespace fft;

@@ -1,0 +1,87 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+
+//#define int long long
+#define fi first
+#define se second
+#define pii pair<int, int>
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define sz(a) (int) (a).size()
+#define eb emplace_back
+#define ld long double
+#define ve vector
+#define forn(i, n) for (int i = 0; i < n; i++)
+
+const int N = 1e6 + 22, K = 300;
+int cnt[N], vl[N], vr[N], a[N];
+long long dp = 0, ans = 0, sumpos[N], answer[N], pref[N], pref2[N];
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n, q;
+    cin >> n >> q;
+    forn (i, n) {
+        cin >> a[i];
+    }
+    forn (i, n) {
+        pref[i + 1] = pref[i] + i;
+        pref2[i + 1] = pref2[i] + i * 1ll * i;
+    }
+    forn (i, q) {
+        cin >> vl[i] >> vr[i];
+        vl[i]--, vr[i]--;
+    }
+    vector<int> id(q);
+    iota(all(id), 0);
+    sort(all(id), [&] (int i, int j) {
+        if (vl[i] / K != vl[j] / K) {
+            return vl[i] < vl[j];
+        }
+        return vr[i] < vr[j];
+    });
+    int l = 0, r = -1;
+    for (auto i : id) {
+        while (r < vr[i]) {
+            r++;
+            dp += cnt[a[r]];
+            ans += dp;
+            cnt[a[r]]++;
+            sumpos[a[r]] += r;
+        }
+        while (l > vl[i]) {
+            l--;
+            dp += cnt[a[l]];
+            ans += cnt[a[l]] * 1ll * (r + 1) - sumpos[a[l]];
+            sumpos[a[l]] += l;
+            cnt[a[l]]++;
+        }
+        while (l < vl[i]) {
+            cnt[a[l]]--;
+            sumpos[a[l]] -= l;
+            dp -= cnt[a[l]];
+            ans -= cnt[a[l]] * 1ll * (r + 1) - sumpos[a[l]];
+            l++;
+        }
+        while (r > vr[i]) {
+            cnt[a[r]]--;
+            sumpos[a[r]] -= r;
+            ans -= dp;
+            dp -= cnt[a[r]];
+            r--;
+        }
+        answer[i] = -ans;
+        //cout << l << " " << r << " " << ans << endl;
+        int R = vr[i] + 1, L = vl[i];
+        answer[i] -= (vr[i] - vl[i] + 1) * 1ll * R * 1ll * L;
+        answer[i] -= pref2[vr[i] + 1] - pref2[vl[i]];
+        answer[i] += (L + R) * 1ll * (pref[vr[i] + 1] - pref[vl[i]]);
+    }
+    forn (i, q) {
+        cout << answer[i] << '\n';
+    }
+}
